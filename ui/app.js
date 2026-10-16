@@ -223,6 +223,9 @@ function onState() {
   document.documentElement.style.setProperty('--ar', p.settings.width / p.settings.height);
   renderMedia();
   renderTranscript();
+  renderStyle();
+  renderNotes();
+  renderAssetsSettings();
   renderInspector();
   renderExport();
   renderTimeline();
@@ -305,6 +308,68 @@ function renderTranscript() {
     $('.t', d).onclick = () => setTime(s.start);
     const ed = $('div', d);
     ed.onblur = () => { if (ed.textContent !== s.text) op('update_segment', { id: s.id, text: ed.textContent }); };
+    box.appendChild(d);
+  });
+}
+
+// ---------------- style, design system, notes, assets settings ----------------
+function renderStyle() {
+  const box = $('#styleCards');
+  if (!ui.styles) return;
+  const cur = P().style;
+  box.innerHTML = '';
+  ui.styles.forEach((s) => {
+    const d = document.createElement('div');
+    d.className = 'scard' + (s.id === cur ? ' on' : '');
+    d.innerHTML = `<div class="sn">${esc(s.name)}</div><div class="st">${esc(s.tagline)}</div><div class="chips">${s.palette.map((c) => `<i style="background:${c}"></i>`).join('')}</div>`;
+    d.onclick = () => op('set_style', { style: s.id });
+    box.appendChild(d);
+  });
+  if (document.activeElement !== $('#design')) $('#design').value = P().design || '';
+  if (document.activeElement !== $('#brief')) $('#brief').value = P().brief || '';
+}
+
+const mss = (t) => { t = Math.max(0, t); const m = Math.floor(t / 60); return m + ':' + String(Math.floor(t % 60)).padStart(2, '0'); };
+function renderNotes() {
+  const box = $('#notesList');
+  const notes = P().notes;
+  if (!notes.length) { box.innerHTML = '<div class="muted small">No notes yet. Watch the video, pause where something is wrong and add a note.</div>'; return; }
+  box.innerHTML = '';
+  notes.forEach((n) => {
+    const d = document.createElement('div');
+    d.className = 'note' + (n.done ? ' done' : '');
+    d.innerHTML = `<input type="checkbox" ${n.done ? 'checked' : ''} title="Done"><span class="tm">${mss(n.t)}</span><div class="nt" contenteditable="plaintext-only" spellcheck="false">${esc(n.text)}</div><button class="ghost" title="Delete note">✕</button>`;
+    $('input', d).onchange = (e) => op('update_note', { id: n.id, done: e.target.checked });
+    $('.tm', d).onclick = () => setTime(n.t);
+    const ed = $('.nt', d);
+    ed.onblur = () => { if (ed.textContent !== n.text) op('update_note', { id: n.id, text: ed.textContent }); };
+    $('button', d).onclick = () => op('remove_note', { id: n.id });
+    box.appendChild(d);
+  });
+}
+async function addNote() {
+  const text = await ask(`Note at ${mss(ui.t)}`, '');
+  if (text && text.trim()) op('add_note', { t: ui.t, text: text.trim() });
+}
+function copyNotes() {
+  const open = P().notes.filter((n) => !n.done);
+  if (!open.length) return toast('No open notes');
+  const msg = 'here are my notes on the animated video. fix each one, then render it again.\n' + open.map((n) => `- ${mss(n.t)} - ${n.text}`).join('\n') + '\nchange only what i listed and keep everything else exactly as it is';
+  navigator.clipboard.writeText(msg);
+  toast('Notes copied. Paste them to Claude');
+}
+function renderAssetsSettings() {
+  const st = S.settings || {};
+  $('#pixStatus').textContent = st.pixabayConfigured ? 'Key saved. Claude can search Pixabay.' : 'No key yet.';
+  const box = $('#rulesList');
+  const rules = st.rules || [];
+  if (!rules.length) { box.innerHTML = '<div class="muted small">No rules yet.</div>'; return; }
+  box.innerHTML = '';
+  rules.forEach((r, i) => {
+    const d = document.createElement('div');
+    d.className = 'rule';
+    d.innerHTML = `<div class="grow">${esc(r.rule)}${r.why ? `<span class="why">${esc(r.why)}</span>` : ''}</div><button class="ghost" title="Delete rule">✕</button>`;
+    $('button', d).onclick = () => invoke('rule_remove', { index: i });
     box.appendChild(d);
   });
 }
@@ -501,6 +566,14 @@ function renderTimeline() {
   let rh = '';
   for (let t = 0; t <= total; t += step) rh += `<div class="tick maj" style="left:${t * pps}px"><span>${step < 1 ? t.toFixed(2) : fmt(t).replace(/\.00$/, '')}</span></div><div class="tick" style="left:${(t + step / 2) * pps}px"></div>`;
   $('#ruler').innerHTML = rh;
+  P().notes.forEach((n) => {
+    const pin = document.createElement('div');
+    pin.className = 'pin' + (n.done ? ' done' : '');
+    pin.style.left = n.t * pps + 'px';
+    pin.title = fmt(n.t) + '  ' + n.text;
+    pin.onpointerdown = (e) => { e.stopPropagation(); setTime(n.t); };
+    $('#ruler').appendChild(pin);
+  });
 
   // heads
   const heads = $('#heads');
@@ -698,6 +771,21 @@ function setZoom(v) {
 // ---------------- wiring ----------------
 function init() {
   preview = new Preview($('#stage'), convertFileSrc);
+  // cutlight-asset://file tokens in HTML clips -> local files for the live preview (the renderer inlines them)
+  preview.resolve = (html) => html.replace(/cutlight-asset:\/\/([A-Za-z0-9._-]+)/g, (_, n) => convertFileSrc(S.assetsDir + '/' + n));
+  $('#bNoteAdd').onclick = addNote;
+  $('#bNote').onclick = addNote;
+  $('#bNoteCopy').onclick = copyNotes;
+  $('#brief').onchange = (e) => op('set_brief', { text: e.target.value });
+  $('#design').onchange = (e) => op('set_design_system', { markdown: e.target.value });
+  $('#pixSave').onclick = async () => {
+    const k = $('#pixKey').value.trim();
+    if (!k) return;
+    await invoke('settings_set_pixabay', { key: k });
+    $('#pixKey').value = '';
+    toast('Pixabay key saved');
+  };
+  op('list_styles').then((l) => { ui.styles = l; if (S && S.open) renderStyle(); });
   $('#bUndo').innerHTML = I.undo; $('#bRedo').innerHTML = I.redo;
   $('#bStart').innerHTML = I.start; $('#bPrev').innerHTML = I.prev; $('#bNext').innerHTML = I.next; $('#bPlay').innerHTML = I.play;
 
@@ -832,6 +920,7 @@ function onKey(e) {
   else if (mod && k === 'e') { e.preventDefault(); doExport(); }
   else if (k === ' ') { e.preventDefault(); ui.playing ? pause() : play(); }
   else if (k === 's' && !mod) split();
+  else if (k === 'n' && !mod) { e.preventDefault(); addNote(); }
   else if (k === 'delete' || k === 'backspace') { if (ui.sel) op('remove_clip', { id: ui.sel, ripple: e.shiftKey }); }
   else if (k === 'arrowleft') setTime(ui.t - (e.shiftKey ? 1 : frameDur()));
   else if (k === 'arrowright') setTime(ui.t + (e.shiftKey ? 1 : frameDur()));

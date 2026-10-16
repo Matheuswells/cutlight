@@ -11,7 +11,7 @@ use std::sync::Mutex;
 
 static LOCK: Mutex<()> = Mutex::new(());
 
-pub fn app_dir(core: &Shared) -> PathBuf {
+pub fn app_dir(core: &crate::core::Core) -> PathBuf {
     core.cache_root.parent().map(|p| p.to_path_buf()).unwrap_or_else(|| core.cache_root.clone())
 }
 

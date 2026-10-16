@@ -160,3 +160,23 @@ h4{font:600 15px var(--serif);margin:6px 0 4px}
 #langSel{width:auto;padding:6px 8px}
 #stage{isolation:isolate;z-index:0}
 .brand img{border-radius:22%;box-shadow:0 2px 8px rgba(185,83,47,.35)}
+/* style cards, notes, pins */
+.tabs button{padding:7px 9px;font-size:12.5px}
+#styleCards{display:flex;flex-direction:column;gap:8px}
+.scard{border:1.5px solid var(--border);background:var(--card);border-radius:12px;padding:10px 12px;cursor:pointer;transition:border-color .12s}
+.scard:hover{border-color:var(--accent)}
+.scard.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
+.scard .sn{font-weight:600}.scard .st{color:var(--muted);font-size:12px;margin:2px 0 7px}
+.scard .chips{display:flex;gap:5px}.scard .chips i{width:18px;height:18px;border-radius:50%;border:1px solid rgba(128,128,128,.35)}
+#notesList{display:flex;flex-direction:column;gap:8px}
+.note{display:flex;gap:8px;align-items:flex-start;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:7px 8px}
+.note.done{opacity:.5}.note.done .nt{text-decoration:line-through}
+.note .tm{font:11px var(--mono);color:var(--accent-2);cursor:pointer;padding-top:3px;flex:none}
+.note .nt{flex:1;outline:none;user-select:text;border-radius:4px;padding:1px 3px;min-width:0}
+.note .nt:focus{background:var(--bg);box-shadow:0 0 0 2px var(--ring)}
+.note button{padding:0 5px;height:20px;font-size:11px;color:var(--muted)}
+#ruler .pin{position:absolute;top:1px;width:12px;height:14px;margin-left:-6px;background:var(--accent);border-radius:3px 3px 7px 7px;cursor:pointer;z-index:3}
+#ruler .pin.done{opacity:.35}
+.rule{display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px}
+.rule:last-child{border-bottom:0}.rule .why{color:var(--muted);display:block}
+.rule button{padding:0 5px;height:20px;color:var(--muted)}

@@ -25,6 +25,8 @@
     <nav class="tabs" id="leftTabs">
       <button data-tab="media" class="on">Media</button>
       <button data-tab="script">Script</button>
+      <button data-tab="style">Style</button>
+      <button data-tab="notes">Notes</button>
       <button data-tab="claude">Claude</button>
     </nav>
     <div class="pane on" id="pane-media">
@@ -39,6 +41,19 @@
         <span class="row gap"><select id="trLang" class="small" title="Spoken language"><option value="">Auto</option><option value="en">English</option><option value="pt">Português</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="it">Italiano</option></select><select id="trMedia" class="small"></select><button class="soft small" id="bTranscribe">Transcribe</button></span></div>
       <div id="transcript"></div>
     </div>
+    <div class="pane" id="pane-style">
+      <label class="lbl">Brief <span class="muted">What should the video be about? Audience, platform, length, call to action. Needed to create a video from scratch.</span></label>
+      <textarea id="brief" spellcheck="false" placeholder="e.g. 45 s Reel explaining how X works, for beginners…" style="min-height:90px"></textarea>
+      <label class="lbl" style="margin-top:6px">Visual style <span class="muted">The look: colours, materials, 3D and motion. Claude decides composition and positioning.</span></label>
+      <div id="styleCards"></div>
+      <label class="lbl" style="margin-top:6px">Design system (DESIGN.md) <span class="muted">Colours, fonts and shapes. Paste one from styles.refero.design; Claude uses only these.</span></label>
+      <textarea id="design" spellcheck="false" placeholder="Paste DESIGN.md here…"></textarea>
+    </div>
+    <div class="pane" id="pane-notes">
+      <label class="lbl">Notes <span class="muted">Pin a note on a moment of the video. Claude fixes exactly what you list.</span></label>
+      <div class="row gap"><button class="soft grow" id="bNoteAdd">+ Add note at playhead</button><button class="soft" id="bNoteCopy" title="Copy all open notes as one message for Claude">Copy</button></div>
+      <div id="notesList"></div>
+    </div>
     <div class="pane" id="pane-claude">
       <div class="card">
         <div class="row gap"><span id="mcpDot" class="dot"></span><b>Claude connection</b></div>
@@ -49,6 +64,17 @@
         <code id="mcpCmd" class="copy" title="Click to copy"></code>
         <p class="small"><b>Manual setup: Claude app</b> (claude_desktop_config.json)</p>
         <code id="mcpJson" class="copy" title="Click to copy"></code>
+      </div>
+      <div class="card">
+        <b>Pixabay</b>
+        <p class="muted small">Lets Claude find free photos, illustrations and vectors. Paste your free API key here (pixabay.com/api/docs), never in chat.</p>
+        <div class="row gap"><input type="password" id="pixKey" placeholder="Pixabay API key" autocomplete="off"><button class="soft" id="pixSave">Save</button></div>
+        <p class="small" id="pixStatus"></p>
+      </div>
+      <div class="card">
+        <b>Editing rules Claude learned</b>
+        <p class="muted small">Every correction you give becomes a rule, so mistakes are not repeated.</p>
+        <div id="rulesList"></div>
       </div>
       <div class="card">
         <b>Try asking</b>
@@ -70,6 +96,7 @@
       <button class="icon big" id="bPlay" title="Play / pause (Space)"></button>
       <button class="icon" id="bNext" title="Forward 1 frame (→)"></button>
       <span id="tc" class="mono">00:00.00</span><span class="muted mono" id="tcTotal">/ 00:00.00</span>
+      <button class="soft small" id="bNote" title="Pin a note here (N)" style="margin-left:14px">+ Note</button>
     </div>
   </main>
 

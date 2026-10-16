@@ -199,11 +199,13 @@ pub fn resume_media_jobs(core: &Shared) {
     core.emit_state();
 }
 
-const READONLY: &[&str] = &["get_project", "get_timeline", "list_presets", "get_script", "get_transcript", "find_media"];
+const READONLY: &[&str] = &[
+    "get_project", "get_timeline", "list_presets", "get_script", "get_transcript", "find_media", "get_design_system", "get_notes", "list_styles", "get_style", "get_brief",
+];
 
 pub fn run(core: &Shared, name: &str, a: &Value) -> R {
     if !core.open.load(Ordering::Relaxed)
-        && !matches!(name, "new_project" | "open_project" | "list_projects" | "list_presets" | "remove_recent" | "close_project")
+        && !matches!(name, "new_project" | "open_project" | "list_projects" | "list_presets" | "list_styles" | "remove_recent" | "close_project")
     {
         return Err("no project is open: call list_projects, then open_project or new_project".into());
     }
@@ -807,6 +809,52 @@ fn apply(core: &Shared, p: &mut Project, name: &str, a: &Value) -> R {
             if let Some(v) = os(a, "format") { st.format = v.into(); }
             if let Some(v) = os(a, "name") { p.name = v.into(); }
             Ok(json!({"settings": p.settings}))
+        }
+        "list_styles" => Ok(crate::guide::styles_json()),
+        "get_style" => {
+            let st = crate::guide::style(&p.style).ok_or("no style selected")?;
+            Ok(json!({"id": st.id, "name": st.name, "spec": st.spec}))
+        }
+        "set_style" => {
+            let id = s(a, "style")?;
+            let st = crate::guide::style(id).ok_or_else(|| format!("unknown style '{id}' (modern | healthy | liquid)"))?;
+            p.style = st.id.into();
+            Ok(json!({"ok": true, "style": st.name}))
+        }
+        "set_brief" => {
+            p.brief = s(a, "text")?.to_string();
+            Ok(json!({"ok": true}))
+        }
+        "get_brief" => Ok(json!({"brief": p.brief, "style": p.style})),
+        "set_design_system" => {
+            p.design = s(a, "markdown")?.to_string();
+            Ok(json!({"ok": true, "chars": p.design.len()}))
+        }
+        "get_design_system" => Ok(json!({"design": p.design})),
+        "add_note" => {
+            let id = p.new_id("n");
+            p.notes.push(Note { id: id.clone(), t: f(a, "t")?.max(0.0), text: s(a, "text")?.to_string(), done: false });
+            p.notes.sort_by(|x, y| x.t.partial_cmp(&y.t).unwrap_or(std::cmp::Ordering::Equal));
+            Ok(json!({"noteId": id}))
+        }
+        "update_note" => {
+            let id = s(a, "id")?;
+            let n = p.notes.iter_mut().find(|n| n.id == id).ok_or("note not found")?;
+            if let Some(v) = os(a, "text") { n.text = v.into(); }
+            if let Some(v) = of(a, "t") { n.t = v.max(0.0); }
+            if let Some(v) = ob(a, "done") { n.done = v; }
+            p.notes.sort_by(|x, y| x.t.partial_cmp(&y.t).unwrap_or(std::cmp::Ordering::Equal));
+            Ok(json!({"ok": true}))
+        }
+        "remove_note" => {
+            let id = s(a, "id")?;
+            p.notes.retain(|n| n.id != id);
+            Ok(json!({"ok": true}))
+        }
+        "get_notes" => {
+            let open_only = ob(a, "openOnly").unwrap_or(false);
+            let list: Vec<&Note> = p.notes.iter().filter(|n| !open_only || !n.done).collect();
+            Ok(json!({"notes": list}))
         }
         "set_script" => {
             p.script = s(a, "text")?.to_string();

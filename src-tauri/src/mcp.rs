@@ -29,27 +29,27 @@ fn tools() -> Vec<Value> {
         t("save_project", "Save the project (pass path the first time).", &[("path", "string", "absolute path ending .cutlight")], &[]),
         t("undo", "Undo the last change.", &[], &[]),
         t("redo", "Redo.", &[], &[]),
-        t("import_media", "Import a video, audio or image file into the media pool (proxy, thumbnails and waveform are built in the background; check media status in get_project).", &[("path", "string", "absolute file path")], &["path"]),
+        t("import_media", "Import a video,start (default) | cut | design | scratch | animate | dynamic | graphics | assets | composition | captions | audio | verify | direct | rules | all.or image file into the media pool (proxy, thumbnails and waveform are built in the background; check media status in get_project).", &[("path", "string", "absolute file path")], &["path"]),
         t("remove_media", "Remove media from the pool and every clip that uses it.", &[("id", "string", "media id")], &["id"]),
         t("find_media", "Search the media pool by name.", &[("query", "string", "substring")], &[]),
-        t("add_clip", "Put media on the timeline. mode: both (video + its audio), video (picture only), audio (sound only, goes on an audio track).", &[("mediaId", "string", ""), ("trackId", "string", "optional; default is V1 / A1"), ("start", "number", "timeline seconds; default end of track"), ("inPoint", "number", "source start seconds"), ("duration", "number", "seconds"), ("mode", "string", "both | video | audio")], &["mediaId"]),
+        t("add_clip", "Put media on the timeline. mode: both (video + its audio), video (picture only),start (default) | cut | design | scratch | animate | dynamic | graphics | assets | composition | captions | audio | verify | direct | rules | all.(sound only, goes on an audio track).", &[("mediaId", "string", ""), ("trackId", "string", "optional; default is V1 / A1"), ("start", "number", "timeline seconds; default end of track"), ("inPoint", "number", "source start seconds"), ("duration", "number", "seconds"), ("mode", "string", "both | video | audio")], &["mediaId"]),
         t("remove_clip", "Delete a clip (ripple closes the gap).", &[id, ("ids", "array", "several clip ids"), ("ripple", "boolean", "")], &[]),
         t("split_clip", "Cut a clip at a timeline time. Without id, cuts every clip under that time.", &[id, ("at", "number", "timeline seconds")], &["at"]),
         t("trim_clip", "Move a clip edge to a timeline time.", &[id, ("side", "string", "start | end"), ("at", "number", "timeline seconds")], &["id", "side", "at"]),
         t("move_clip", "Move a clip in time and/or to another track.", &[id, ("start", "number", ""), ("trackId", "string", "")], &["id", "start"]),
         t("set_clip", "Edit clip properties: label,start,inPoint,duration,speed,volume(0-4),fadeIn,fadeOut,audio(bool),fit(fit|fill),opacity,scale,x,y(0-1 center),html.", &[id, ("label", "string", ""), ("start", "number", ""), ("inPoint", "number", ""), ("duration", "number", ""), ("speed", "number", ""), ("volume", "number", ""), ("fadeIn", "number", ""), ("fadeOut", "number", ""), ("audio", "boolean", ""), ("fit", "string", ""), ("opacity", "number", ""), ("scale", "number", ""), ("x", "number", ""), ("y", "number", ""), ("html", "string", "")], &["id"]),
         t("set_transition", "Transition INTO this clip from the previous clip on the track: dissolve | fade-black | slide-left | slide-right | slide-up | slide-down | none. The clip slides earlier by the duration (overlap).", &[("clipId", "string", ""), ("kind", "string", ""), ("duration", "number", "seconds, default 0.5")], &["clipId", "kind"]),
-        t("detach_audio", "Split a video clip's audio onto an audio track (video keeps playing silent).", &[id], &["id"]),
-        t("remove_audio", "Delete the audio of a video clip.", &[id], &["id"]),
-        t("remove_video", "Delete the picture of a clip, keep only its audio on an audio track.", &[id], &["id"]),
-        t("add_track", "Add a video or audio track.", &[("kind", "string", "video | audio"), ("name", "string", "")], &[]),
+        t("detach_audio", "Split a video clip'sstart (default) | cut | design | scratch | animate | dynamic | graphics | assets | composition | captions | audio | verify | direct | rules | all.onto an audio track (video keeps playing silent).", &[id], &["id"]),
+        t("remove_audio", "Delete thestart (default) | cut | design | scratch | animate | dynamic | graphics | assets | composition | captions | audio | verify | direct | rules | all.of a video clip.", &[id], &["id"]),
+        t("remove_video", "Delete the picture of a clip, keep only itsstart (default) | cut | design | scratch | animate | dynamic | graphics | assets | composition | captions | audio | verify | direct | rules | all.on an audio track.", &[id], &["id"]),
+        t("add_track", "Add a video orstart (default) | cut | design | scratch | animate | dynamic | graphics | assets | composition | captions | audio | verify | direct | rules | all.track.", &[("kind", "string", "video | audio"), ("name", "string", "")], &[]),
         t("remove_track", "Remove a track (and its clips).", &[("id", "string", "track id")], &["id"]),
         t("set_track", "Rename / mute / hide / lock a track.", &[("id", "string", "track id"), ("name", "string", ""), ("muted", "boolean", ""), ("hidden", "boolean", ""), ("locked", "boolean", "")], &["id"]),
         t("move_track", "Reorder tracks (index 0 = top layer).", &[("id", "string", ""), ("index", "number", "")], &["id", "index"]),
         t("delete_range", "Remove a time range from all unlocked tracks (ripple by default). Ideal for cutting filler/mistakes found in the transcript.", &[("start", "number", ""), ("end", "number", ""), ("ripple", "boolean", "default true")], &["start", "end"]),
         t("organize", "Tidy the timeline. mode: close_gaps | tidy (close gaps + drop empty tracks) | align_start.", &[("mode", "string", ""), ("trackId", "string", "optional")], &[]),
         t("add_html", "Add an HTML animation overlay clip. HTML must be self-contained with a transparent background, laid out in vw/vh, animated with CSS animations / Web Animations, or define window.__seek(t) (seconds from clip start) for JS-driven animation. Inline images as data: URIs. It previews live and is rendered frame-exact.", &[("html", "string", "full HTML document"), ("start", "number", ""), ("duration", "number", ""), ("trackId", "string", ""), ("label", "string", "")], &["html", "start", "duration"]),
-        t("add_captions", "Burn captions from the transcript (or the given segments) as an HTML overlay.", &[("segments", "array", "[{start,end,text}] optional"), ("position", "string", "bottom | middle | top")], &[]),
+        t("add_captions", "Burnstart (default) | cut | design | scratch | animate | dynamic | graphics | assets | composition | captions | audio | verify | direct | rules | all.from the transcript (or the given segments) as an HTML overlay.", &[("segments", "array", "[{start,end,text}] optional"), ("position", "string", "bottom | middle | top")], &[]),
         t("set_settings", "Output settings: preset (see list_presets), width, height, fps, quality (draft|good|high|max), videoBitrateK (0 = quality based), audioBitrateK, sampleRate, channels(1|2), normalizeAudio (-14 LUFS), hardware (GPU encode), format (mp4|mov), name.", &[("preset", "string", ""), ("width", "number", ""), ("height", "number", ""), ("fps", "number", ""), ("quality", "string", ""), ("videoBitrateK", "number", ""), ("audioBitrateK", "number", ""), ("sampleRate", "number", ""), ("channels", "number", ""), ("normalizeAudio", "boolean", ""), ("hardware", "boolean", ""), ("format", "string", ""), ("name", "string", "")], &[]),
         t("set_script", "Store the intended script of the video (the creator can paste it in the Script tab). Use it to correct the transcript.", &[("text", "string", "")], &["text"]),
         t("get_script", "Read the script the creator pasted.", &[], &[]),
@@ -57,6 +57,26 @@ fn tools() -> Vec<Value> {
         t("set_transcript", "Replace the transcript with corrected segments.", &[("segments", "array", "[{start,end,text}]")], &["segments"]),
         t("update_segment", "Fix one transcript segment.", &[("id", "string", ""), ("text", "string", ""), ("start", "number", ""), ("end", "number", "")], &["id"]),
         t("transcribe", "Run Whisper (offline) on a media file and store segments as the transcript. Use the script to review and fix errors afterwards.", &[("mediaId", "string", ""), ("language", "string", "ISO code, e.g. pt, en; omit to auto-detect")], &["mediaId"]),
+        t("get_editing_guide", "READ THIS BEFORE EDITING. The editing playbook (cut,start (default) | cut | design | scratch | animate | dynamic | graphics | assets | composition | captions | audio | verify | direct | rules | all.system, animate, vector graphics, assets, layouts, captions, audio, verify, direct, rules) plus the style/tone the user selected and the rules learned from their corrections. topic: start (default) | cut | design | animate | graphics | assets | layouts | captions | audio | verify | direct | rules | all.", &[("topic", "string", "default start")], &[]),
+        t("list_styles", "The 3 visual styles (modern, healthy, liquid). A style is a visual language only; Claude decides composition and placement.", &[], &[]),
+        t("get_style", "Full spec of the style the user selected for this project (pacing, motion, drawing, type, captions, audio, palette). Follow it.", &[], &[]),
+        t("set_style", "Select the visual style (the user normally does this in the Style tab).", &[("style", "string", "modern | healthy | liquid")], &["style"]),
+        t("get_brief", "What this video is about (topic, audience, platform, tone, length, call to action). The key input when creating a video from scratch.", &[], &[]),
+        t("set_brief", "Store the brief.", &[("text", "string", "")], &["text"]),
+        t("get_design_system", "The project DESIGN.md (colours, fonts, spacing, shapes, do/don't). Empty if none yet.", &[], &[]),
+        t("set_design_system", "Save a DESIGN.md word for word (e.g. from styles.refero.design).", &[("markdown", "string", "")], &["markdown"]),
+        t("get_notes", "Notes the user pinned on moments of the video (fix these). openOnly=true hides done ones.", &[("openOnly", "boolean", "")], &[]),
+        t("add_note", "Pin a note at a time (seconds).", &[("t", "number", ""), ("text", "string", "")], &["t", "text"]),
+        t("update_note", "Edit a note or mark it done after you fixed it.", &[("id", "string", ""), ("text", "string", ""), ("t", "number", ""), ("done", "boolean", "")], &["id"]),
+        t("remove_note", "Delete a note.", &[("id", "string", "")], &["id"]),
+        t("get_rules", "Editingstart (default) | cut | design | scratch | animate | dynamic | graphics | assets | composition | captions | audio | verify | direct | rules | all.learned from this user's corrections (also appended to the guide).", &[], &[]),
+        t("add_rule", "Save a general rule learned from a correction, with the reason, so the mistake is not repeated.", &[("rule", "string", "short, specific"), ("why", "string", "what the user corrected")], &["rule"]),
+        t("remove_rule", "Delete a learned rule by its 0-based index.", &[("index", "number", "")], &["index"]),
+        t("pixabay_status", "Is the Pixabay API key configured? (The user types it into the app, never into chat.)", &[], &[]),
+        t("search_pixabay", "Search Pixabay (free commercial use). kind: photo | illustration | vector | video.", &[("query", "string", ""), ("kind", "string", ""), ("orientation", "string", "horizontal | vertical"), ("perPage", "number", ""), ("minWidth", "number", "")], &["query"]),
+        t("import_asset", "Download an allowed asset URL (Pixabay / icon CDNs) into the app. Images and videos also go into the media pool (mediaId). Returns a token usable in HTML.", &[("url", "string", "")], &["url"]),
+        t("get_icon", "Inline SVG icon. set: lucide (UI icons) | tabler | simple-icons (brand logos, name = slug e.g. github).", &[("set", "string", ""), ("name", "string", ""), ("color", "string", "css colour"), ("size", "number", "px"), ("strokeWidth", "number", "")], &["name"]),
+        t("asset_data_uri", "Make a local image/svg/font (path) or an allowed URL embeddable in HTML. Returns a token like cutlight-asset://xxxx.png to use in <img src>; Cutlight inlines it at render time. Big images are downscaled.", &[("path", "string", ""), ("url", "string", ""), ("maxWidth", "number", "default 1600")], &[]),
         t("create_shortcuts", "Create (or refresh) the Cutlight shortcuts on the desktop and in the Start/Applications menu.", &[], &[]),
         t("render", "Render the timeline to a video file. Returns immediately; poll get_render_status.", &[("path", "string", "absolute output path, .mp4 or .mov")], &["path"]),
         t("get_render_status", "Render progress (state idle|running|done|error|cancelled).", &[], &[]),
@@ -119,6 +139,22 @@ fn call(core: &Shared, name: &str, a: &Value) -> Value {
         }
         "transcribe" => crate::whisper::transcribe(core, a),
         "create_shortcuts" => crate::shortcuts::create(),
+        "get_editing_guide" => {
+            let style = core.project.lock().unwrap().style.clone();
+            crate::guide::guide(a["topic"].as_str().unwrap_or("start"), &crate::settings::load(core).rules, &style).map(|g| json!({"guide": g}))
+        }
+        "get_rules" => Ok(json!({"rules": crate::settings::load(core).rules})),
+        "add_rule" => crate::settings::add_rule(core, a["rule"].as_str().unwrap_or(""), a["why"].as_str().unwrap_or("")),
+        "remove_rule" => {
+            crate::settings::remove_rule(core, a["index"].as_u64().unwrap_or(u64::MAX) as usize);
+            core.emit_state();
+            Ok(json!({"ok": true}))
+        }
+        "pixabay_status" => Ok(crate::assets::pixabay_status(core)),
+        "search_pixabay" => crate::assets::pixabay_search(core, a),
+        "import_asset" => crate::assets::import_asset(core, a),
+        "get_icon" => crate::assets::get_icon(a),
+        "asset_data_uri" => crate::assets::asset_token(core, a),
         "screenshot" => return screenshot(core).unwrap_or_else(|e| err(&e)),
         "ui_state" => core.ui_call("return window.cutlight.state()", 5000),
         "ui_control" => {
@@ -146,11 +182,19 @@ fn rpc(core: &Shared, req: &Value) -> Option<Value> {
     let result = match method {
         "initialize" => json!({
             "protocolVersion": req["params"]["protocolVersion"].as_str().unwrap_or("2025-03-26"),
-            "capabilities": {"tools": {}},
+            "capabilities": {"tools": {}, "prompts": {}},
             "serverInfo": {"name": "cutlight", "version": env!("CARGO_PKG_VERSION")},
-            "instructions": "Cutlight video editor. If no project is open (start screen), use list_projects then open_project, or new_project. Then get_timeline and get_project. Times are seconds on the timeline. The user may have pasted a script (get_script): compare it with get_transcript and fix mistakes with set_transcript/update_segment. Use screenshot to see the UI. HTML animations: see add_html."
+            "instructions": "Cutlight video editor. BEFORE EDITING call get_editing_guide (it explains how to cut, design, animate, draw vector graphics, use Pixabay/icons,start (default) | cut | design | scratch | animate | dynamic | graphics | assets | composition | captions | audio | verify | direct | rules | all.and fix notes, and contains the style the user selected and rules learned from their corrections). If no project is open (start screen), use list_projects then open_project, or new_project. Then get_timeline and get_project. Times are seconds on the timeline. The user may have pasted a script (get_script): compare it with get_transcript and fix mistakes with set_transcript/update_segment. Use screenshot to see the UI. HTML animations: see add_html."
         }),
         "tools/list" => json!({"tools": tools()}),
+        "prompts/list" => json!({"prompts": crate::guide::prompts()}),
+        "prompts/get" => {
+            let n = req["params"]["name"].as_str().unwrap_or("");
+            match crate::guide::prompt_text(n, &req["params"]["arguments"]) {
+                Some(t) => json!({"description": n, "messages": [{"role": "user", "content": {"type": "text", "text": t}}]}),
+                None => return Some(json!({"jsonrpc": "2.0", "id": id, "error": {"code": -32602, "message": "unknown prompt"}})),
+            }
+        }
         "tools/call" => {
             let name = req["params"]["name"].as_str().unwrap_or("");
             call(core, name, &req["params"]["arguments"])

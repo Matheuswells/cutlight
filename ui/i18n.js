@@ -79,6 +79,34 @@ const PT = {
   'Saved': 'Salvo', 'Transcribing…': 'Transcrevendo…', 'Transcribing with Whisper…': 'Transcrevendo com o Whisper…', 'Import media with audio first': 'Importe uma mídia com áudio primeiro',
 };
 
+Object.assign(PT, {
+  'Modern': 'Moderno', 'Clean Healthy': 'Clean Healthy', 'Liquid': 'Liquid',
+  'Precise tech look: graphite, neon edges, isometric layers and glow.': 'Visual tech preciso: grafite, bordas neon, camadas isométricas e brilho.',
+  'Fresh and calm: soft greens, clay-like 3D objects, gentle floating motion.': 'Fresco e calmo: verdes suaves, objetos 3D estilo argila, movimento flutuante delicado.',
+  'Fluid and glossy: glass, gel blobs, metaball morphs and elastic motion.': 'Fluido e brilhante: vidro, gotas de gel, morphs de metaballs e movimento elástico.',
+  'Brief': 'Briefing', 'What should the video be about? Audience, platform, length, call to action. Needed to create a video from scratch.': 'Sobre o que é o vídeo? Público, plataforma, duração, chamada para ação. Necessário para criar um vídeo do zero.',
+  'e.g. 45 s Reel explaining how X works, for beginners…': 'ex.: Reel de 45 s explicando como X funciona, para iniciantes…',
+  'Visual style': 'Estilo visual', 'The look: colours, materials, 3D and motion. Claude decides composition and positioning.': 'O visual: cores, materiais, 3D e movimento. O Claude decide a composição e o posicionamento.',
+  'Style': 'Estilo', 'Notes': 'Notas', 'Style and tone': 'Estilo e tom',
+  'Claude follows this for pacing, animations, drawings, captions and sound.': 'O Claude segue isso no ritmo, animações, desenhos, legendas e som.',
+  'Clean & Minimal': 'Limpo e minimalista', 'Bold & Energetic': 'Ousado e enérgico', 'Playful & Illustrated': 'Divertido e ilustrado',
+  'Calm, premium, editorial. Few things on screen, elegant motion.': 'Calmo, premium, editorial. Poucos elementos na tela, movimento elegante.',
+  'Creator-style: big kinetic type, fast cuts, punchy motion.': 'Estilo creator: tipografia grande em movimento, cortes rápidos, animações marcantes.',
+  'Friendly, warm, hand-drawn feel with bouncy motion.': 'Amigável, acolhedor, com traço de desenho à mão e movimento elástico.',
+  'Design system (DESIGN.md)': 'Design system (DESIGN.md)',
+  'Colours, fonts and shapes. Paste one from styles.refero.design; Claude uses only these.': 'Cores, fontes e formas. Cole um de styles.refero.design; o Claude usa somente isso.',
+  'Paste DESIGN.md here…': 'Cole o DESIGN.md aqui…',
+  'Pin a note on a moment of the video. Claude fixes exactly what you list.': 'Fixe uma nota em um momento do vídeo. O Claude corrige exatamente o que você listar.',
+  '+ Add note at playhead': '+ Adicionar nota no cursor', 'Copy': 'Copiar', 'Copy all open notes as one message for Claude': 'Copiar todas as notas abertas como uma mensagem para o Claude',
+  'No notes yet. Watch the video, pause where something is wrong and add a note.': 'Ainda sem notas. Assista ao vídeo, pause onde algo estiver errado e adicione uma nota.',
+  '+ Note': '+ Nota', 'Pin a note here (N)': 'Fixar uma nota aqui (N)', 'Done': 'Feito', 'Delete note': 'Apagar nota',
+  'No open notes': 'Nenhuma nota aberta', 'Notes copied. Paste them to Claude': 'Notas copiadas. Cole no Claude',
+  'Pixabay': 'Pixabay', 'Lets Claude find free photos, illustrations and vectors. Paste your free API key here (pixabay.com/api/docs), never in chat.': 'Permite ao Claude achar fotos, ilustrações e vetores gratuitos. Cole sua chave de API gratuita aqui (pixabay.com/api/docs), nunca no chat.',
+  'Pixabay API key': 'Chave de API do Pixabay', 'Save': 'Salvar', 'Key saved. Claude can search Pixabay.': 'Chave salva. O Claude pode buscar no Pixabay.', 'No key yet.': 'Ainda sem chave.', 'Pixabay key saved': 'Chave do Pixabay salva',
+  'Editing rules Claude learned': 'Regras de edição que o Claude aprendeu', 'Every correction you give becomes a rule, so mistakes are not repeated.': 'Cada correção sua vira uma regra, para os erros não se repetirem.',
+  'No rules yet.': 'Ainda sem regras.', 'Delete rule': 'Apagar regra',
+});
+
 const plural = (n, a, b) => (Number(n) === 1 ? a : b);
 const PATTERNS = [
   [/^(\d+) clips?$/, (m) => `${m[1]} ${plural(m[1], 'clipe', 'clipes')}`],

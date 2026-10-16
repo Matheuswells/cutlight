@@ -466,7 +466,7 @@ fn render_html_clip(core: &Shared, c: &Clip, st: &Settings) -> Result<PathBuf, S
     let frames = (c.duration * st.fps as f64).round().max(1.0) as u64;
     let _ = core.app.emit(
         "html-render",
-        json!({"key": key, "html": html, "width": st.width, "height": st.height, "fps": st.fps, "frames": frames}),
+        json!({"key": key, "html": crate::assets::expand_tokens(core, &html), "width": st.width, "height": st.height, "fps": st.fps, "frames": frames}),
     );
     let res = loop {
         if core.cancel.load(Ordering::Relaxed) {

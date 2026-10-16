@@ -1,5 +1,8 @@
+mod assets;
 mod connect;
 mod core;
+mod guide;
+mod settings;
 mod mcp;
 mod mcp_stdio;
 mod media;
@@ -79,6 +82,19 @@ async fn connect_claude() -> Result<Value, String> {
     tauri::async_runtime::spawn_blocking(connect::run).await.map_err(|e| e.to_string())?
 }
 
+/// The Pixabay key is typed in the app (never in chat) and never sent back to the UI.
+#[tauri::command]
+fn settings_set_pixabay(core: State<'_, Shared>, key: String) {
+    settings::set_pixabay_key(&core, &key);
+    core.emit_state();
+}
+
+#[tauri::command]
+fn rule_remove(core: State<'_, Shared>, index: usize) {
+    settings::remove_rule(&core, index);
+    core.emit_state();
+}
+
 #[tauri::command]
 async fn claude_status() -> Result<bool, String> {
     tauri::async_runtime::spawn_blocking(connect::linked).await.map_err(|e| e.to_string())
@@ -129,7 +145,7 @@ pub fn run() {
             app.manage(core);
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![op, get_state, ui_reply, html_frame, html_finish, render_start, render_cancel, connect_claude, claude_status])
+        .invoke_handler(tauri::generate_handler![op, get_state, ui_reply, html_frame, html_finish, render_start, render_cancel, connect_claude, claude_status, settings_set_pixabay, rule_remove])
         .run(tauri::generate_context!())
         .expect("error while running Cutlight");
 }

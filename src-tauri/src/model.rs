@@ -164,7 +164,24 @@ pub struct Project {
     /// The script the creator pasted so Claude can fix transcription errors
     pub script: String,
     pub transcript: Vec<Segment>,
+    /// The look of the video: a DESIGN.md (colours, fonts, spacing, shapes, do's and don'ts)
+    pub design: String,
+    /// Selected style + tone preset id (see guide::STYLES)
+    pub style: String,
+    /// What the video is about (topic, audience, platform, tone, length, CTA); essential for from-scratch videos
+    pub brief: String,
+    /// Notes pinned to moments of the video ("fix this at 0:42")
+    pub notes: Vec<Note>,
     pub next_id: u64,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase", default)]
+pub struct Note {
+    pub id: String,
+    pub t: f64,
+    pub text: String,
+    pub done: bool,
 }
 
 impl Default for Project {
@@ -188,6 +205,10 @@ impl Default for Project {
             ],
             script: String::new(),
             transcript: vec![],
+            design: String::new(),
+            style: "modern".into(),
+            brief: String::new(),
+            notes: vec![],
             next_id: 10,
         }
     }
