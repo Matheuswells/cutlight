@@ -1,0 +1,30 @@
+[package]
+name = "cutlight"
+version = "0.1.0"
+edition = "2021"
+description = "Lightweight, AI-first video editor"
+
+[lib]
+name = "cutlight_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["protocol-asset"] }
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tiny_http = "0.12"
+base64 = "0.22"
+xcap = "0.7"
+whisper-rs = "0.16"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 4
+strip = true
+panic = "abort"
+

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cutlight</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header id="top">
+    <div class="brand"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2l2.2 6.8L21 11l-6.8 2.2L12 20l-2.2-6.8L3 11l6.8-2.2z" fill="currentColor"/></svg><span>Cutlight</span></div>
+    <input id="projName" spellcheck="false" title="Project name">
+    <div class="sep"></div>
+    <button class="icon" id="bUndo" title="Undo (Ctrl+Z)"></button>
+    <button class="icon" id="bRedo" title="Redo (Ctrl+Shift+Z)"></button>
+    <button class="ghost" id="bNew">New</button>
+    <button class="ghost" id="bOpen">Open</button>
+    <button class="ghost" id="bSave">Save</button>
+    <div class="grow"></div>
+    <span id="saveState" class="muted small"></span>
+    <button class="primary" id="bExport">Export</button>
+  </header>
+
+  <aside id="left" class="panel">
+    <nav class="tabs" id="leftTabs">
+      <button data-tab="media" class="on">Media</button>
+      <button data-tab="script">Script</button>
+      <button data-tab="claude">Claude</button>
+    </nav>
+    <div class="pane on" id="pane-media">
+      <div class="row"><button class="soft grow" id="bImport">+ Import media</button></div>
+      <div id="dropHint" class="muted small center">or drop files anywhere</div>
+      <div id="mediaList"></div>
+    </div>
+    <div class="pane" id="pane-script">
+      <label class="lbl">Script <span class="muted">paste what you intend to say. Claude uses it to fix transcription mistakes.</span></label>
+      <textarea id="script" spellcheck="false" placeholder="Paste your script here…"></textarea>
+      <div class="row between"><label class="lbl nomargin">Transcript</label>
+        <span class="row gap"><select id="trLang" class="small" title="Spoken language"><option value="">Auto</option><option value="en">English</option><option value="pt">Português</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="it">Italiano</option></select><select id="trMedia" class="small"></select><button class="soft small" id="bTranscribe">Transcribe</button></span></div>
+      <div id="transcript"></div>
+    </div>
+    <div class="pane" id="pane-claude">
+      <div class="card">
+        <div class="row gap"><span id="mcpDot" class="dot"></span><b>Claude connection</b></div>
+        <p class="muted small">Cutlight runs a local MCP server while it is open. Claude can do everything you can, see the screen and drive the UI.</p>
+        <p class="small"><b>Claude Code</b></p>
+        <code id="mcpCmd" class="copy" title="Click to copy"></code>
+        <p class="small"><b>Claude Desktop / other clients</b> (JSON config)</p>
+        <code id="mcpJson" class="copy" title="Click to copy"></code>
+      </div>
+      <div class="card">
+        <b>Try asking</b>
+        <ul class="small tips">
+          <li>“Import these clips and cut all the silences.”</li>
+          <li>“Compare my script with the transcript and fix errors.”</li>
+          <li>“Add an animated lower third with my name at 2s.”</li>
+          <li>“Make it a Reel, normalize the audio and export.”</li>
+        </ul>
+      </div>
+    </div>
+  </aside>
+
+  <main id="center">
+    <div id="stageWrap"><div id="stage"></div></div>
+    <div id="transport">
+      <button class="icon" id="bStart" title="Go to start (Home)"></button>
+      <button class="icon" id="bPrev" title="Back 1 frame (←)"></button>
+      <button class="icon big" id="bPlay" title="Play / pause (Space)"></button>
+      <button class="icon" id="bNext" title="Forward 1 frame (→)"></button>
+      <span id="tc" class="mono">00:00.00</span><span class="muted mono" id="tcTotal">/ 00:00.00</span>
+    </div>
+  </main>
+
+  <aside id="right" class="panel">
+    <nav class="tabs" id="rightTabs">
+      <button data-tab="clip" class="on">Clip</button>
+      <button data-tab="export">Export</button>
+    </nav>
+    <div class="pane on" id="pane-clip"></div>
+    <div class="pane" id="pane-export"></div>
+  </aside>
+
+  <section id="tl">
+    <div id="tlBar">
+      <button class="soft small" id="tSplit" title="Split at playhead (S)">Split</button>
+      <button class="soft small" id="tDelete" title="Delete (Del)">Delete</button>
+      <button class="soft small" id="tRipple" title="Delete and close the gap (Shift+Del)">Ripple delete</button>
+      <div class="sep"></div>
+      <button class="soft small" id="tAddV">+ Video track</button>
+      <button class="soft small" id="tAddA">+ Audio track</button>
+      <button class="soft small" id="tOrganize">Organize ▾</button>
+      <div class="grow"></div>
+      <label class="small muted row gap"><input type="checkbox" id="tSnap" checked> Snap</label>
+      <button class="icon" id="zOut" title="Zoom out (-)">−</button>
+      <input type="range" id="zoom" min="10" max="400" value="60">
+      <button class="icon" id="zIn" title="Zoom in (+)">+</button>
+      <button class="soft small" id="zFit">Fit</button>
+    </div>
+    <div id="tlBody">
+      <div id="heads"></div>
+      <div id="scroll"><div id="canvas"><div id="ruler"></div><div id="lanes"></div><div id="playhead"><i></i></div></div></div>
+    </div>
+  </section>
+</div>
+<div id="modal" hidden></div>
+<div id="toasts"></div>
+<script src="app.js" type="module"></script>
+</body>
+</html>

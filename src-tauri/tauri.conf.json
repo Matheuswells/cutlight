@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Cutlight",
+  "version": "0.1.0",
+  "identifier": "app.cutlight.editor",
+  "build": {
+    "frontendDist": "../ui"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "Cutlight",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 1000,
+        "minHeight": 640,
+        "dragDropEnabled": true
+      }
+    ],
+    "security": {
+      "csp": null,
+      "assetProtocol": { "enable": true, "scope": ["**"] }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": ["icons/icon.png", "icons/icon.ico"],
+    "resources": ["models/*"],
+    "externalBin": ["binaries/ffmpeg", "binaries/ffprobe"],
+    "fileAssociations": [
+      { "ext": ["cutlight"], "name": "Cutlight Project", "role": "Editor" }
+    ]
+  }
+}
