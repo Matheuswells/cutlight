@@ -57,6 +57,7 @@ fn tools() -> Vec<Value> {
         t("set_transcript", "Replace the transcript with corrected segments.", &[("segments", "array", "[{start,end,text}]")], &["segments"]),
         t("update_segment", "Fix one transcript segment.", &[("id", "string", ""), ("text", "string", ""), ("start", "number", ""), ("end", "number", "")], &["id"]),
         t("transcribe", "Run Whisper (offline) on a media file and store segments as the transcript. Use the script to review and fix errors afterwards.", &[("mediaId", "string", ""), ("language", "string", "ISO code, e.g. pt, en; omit to auto-detect")], &["mediaId"]),
+        t("create_shortcuts", "Create (or refresh) the Cutlight shortcuts on the desktop and in the Start/Applications menu.", &[], &[]),
         t("render", "Render the timeline to a video file. Returns immediately; poll get_render_status.", &[("path", "string", "absolute output path, .mp4 or .mov")], &["path"]),
         t("get_render_status", "Render progress (state idle|running|done|error|cancelled).", &[], &[]),
         t("cancel_render", "Cancel a running render.", &[], &[]),
@@ -117,6 +118,7 @@ fn call(core: &Shared, name: &str, a: &Value) -> Value {
             Ok(json!({"ok": true}))
         }
         "transcribe" => crate::whisper::transcribe(core, a),
+        "create_shortcuts" => crate::shortcuts::create(),
         "screenshot" => return screenshot(core).unwrap_or_else(|e| err(&e)),
         "ui_state" => core.ui_call("return window.cutlight.state()", 5000),
         "ui_control" => {

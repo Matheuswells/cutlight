@@ -20,7 +20,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 #app{display:grid;height:100vh;grid-template-rows:48px minmax(200px,1fr) 300px;grid-template-columns:292px minmax(0,1fr) 292px;
   grid-template-areas:"top top top" "left center right" "tl tl tl"}
 #top{grid-area:top;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--border)}
-.brand{display:flex;align-items:center;gap:8px;color:var(--accent);font:600 18px var(--serif);margin-right:6px}
+.brand{display:flex;align-items:center;gap:10px;color:var(--accent);font:600 18px var(--serif);margin-right:6px}
 .brand span{color:var(--text)}
 #projName{background:transparent;border:1px solid transparent;border-radius:8px;padding:5px 8px;width:200px;font-weight:500}
 #projName:hover{border-color:var(--border)}#projName:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring);background:var(--card)}
@@ -159,3 +159,4 @@ h4{font:600 15px var(--serif);margin:6px 0 4px}
 .pcard .tag{bottom:8px;left:8px}
 #langSel{width:auto;padding:6px 8px}
 #stage{isolation:isolate;z-index:0}
+.brand img{border-radius:22%;box-shadow:0 2px 8px rgba(185,83,47,.35)}

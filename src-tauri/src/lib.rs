@@ -6,6 +6,7 @@ mod media;
 mod model;
 mod ops;
 mod render;
+mod shortcuts;
 mod store;
 mod templates;
 mod whisper;
@@ -124,6 +125,7 @@ pub fn run() {
                 seq: AtomicU64::new(1),
             });
             mcp::start(core.clone());
+            shortcuts::first_run(&core);
             app.manage(core);
             Ok(())
         })
