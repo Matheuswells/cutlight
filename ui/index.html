@@ -10,15 +10,16 @@
 <div id="app">
   <header id="top">
     <div class="brand"><img src="logo.svg" alt="" width="26" height="26"><span>Cutlight</span></div>
-    <button class="ghost" id="bHome" title="Back to all projects">‹ Projects</button>
+    <button class="ghost" id="bHome" data-ic="chevron-left" title="Back to all projects">Projects</button>
     <input id="projName" spellcheck="false" title="Project name">
     <div class="sep"></div>
-    <button class="icon" id="bUndo" title="Undo (Ctrl+Z)"></button>
-    <button class="icon" id="bRedo" title="Redo (Ctrl+Shift+Z)"></button>
-    <button class="ghost" id="bSave" title="Save a copy of the project to a file">Save as…</button>
+    <button class="icon" id="bUndo" data-ic="undo" title="Undo (Ctrl+Z)"></button>
+    <button class="icon" id="bRedo" data-ic="redo" title="Redo (Ctrl+Shift+Z)"></button>
+    <button class="ghost" id="bSave" data-ic="save" title="Save a copy of the project to a file">Save as…</button>
     <div class="grow"></div>
     <span id="saveState" class="muted small"></span>
-    <button class="soft" id="bConnectTop" title="Connect the Claude app to this editor"><span id="mcpDotTop" class="dot"></span> Connect Claude</button>
+    <button class="icon" id="bTheme" title="Theme"></button>
+    <button class="soft" id="bConnectTop" title="Connect the Claude app to this editor"><span id="mcpDotTop" class="dot"></span><span class="lbl2">Connect Claude</span></button>
   </header>
 
   <aside id="left" class="panel">
@@ -30,15 +31,19 @@
       <button data-tab="claude">Claude</button>
     </nav>
     <div class="pane on" id="pane-media">
-      <div class="row"><button class="soft grow" id="bImport">+ Import media</button></div>
+      <button class="soft" id="bImport" data-ic="plus">Import media</button>
       <div id="dropHint" class="muted small center">or drop files anywhere</div>
       <div id="mediaList"></div>
     </div>
     <div class="pane" id="pane-script">
       <label class="lbl">Script <span class="muted">paste what you intend to say. Claude uses it to fix transcription mistakes.</span></label>
       <textarea id="script" spellcheck="false" placeholder="Paste your script here…"></textarea>
-      <div class="row between"><label class="lbl nomargin">Transcript</label>
-        <span class="row gap"><select id="trLang" class="small" title="Spoken language"><option value="">Auto</option><option value="en">English</option><option value="pt">Português</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="it">Italiano</option></select><select id="trMedia" class="small"></select><button class="soft small" id="bTranscribe">Transcribe</button></span></div>
+      <label class="lbl nomargin">Transcript</label>
+      <div class="trctl">
+        <select id="trLang" class="small" title="Spoken language"><option value="">Auto</option><option value="en">English</option><option value="pt">Português</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="it">Italiano</option></select>
+        <select id="trMedia" class="small" title="Media to transcribe"></select>
+        <button class="soft small" id="bTranscribe" data-ic="mic">Transcribe</button>
+      </div>
       <div id="transcript"></div>
     </div>
     <div class="pane" id="pane-style">
@@ -51,7 +56,7 @@
     </div>
     <div class="pane" id="pane-notes">
       <label class="lbl">Notes <span class="muted">Pin a note on a moment of the video. Claude fixes exactly what you list.</span></label>
-      <div class="row gap"><button class="soft grow" id="bNoteAdd">+ Add note at playhead</button><button class="soft" id="bNoteCopy" title="Copy all open notes as one message for Claude">Copy</button></div>
+      <div class="row gap"><button class="soft grow" id="bNoteAdd" data-ic="plus">Add note at playhead</button><button class="soft" id="bNoteCopy" data-ic="copy" title="Copy all open notes as one message for Claude">Copy</button></div>
       <div id="notesList"></div>
     </div>
     <div class="pane" id="pane-claude">
@@ -60,10 +65,13 @@
         <p class="muted small">Cutlight runs a local MCP server while it is open. Claude can do everything you can, see the screen and drive the UI.</p>
         <button class="primary" id="bConnect" style="width:100%">Connect to the Claude app</button>
         <p class="muted small" id="connectMsg"></p>
-        <p class="small"><b>Manual setup: Claude Code (terminal)</b></p>
-        <code id="mcpCmd" class="copy" title="Click to copy"></code>
-        <p class="small"><b>Manual setup: Claude app</b> (claude_desktop_config.json)</p>
-        <code id="mcpJson" class="copy" title="Click to copy"></code>
+        <details class="manual">
+          <summary>Manual setup</summary>
+          <p class="small"><b>Claude Code (terminal)</b></p>
+          <code id="mcpCmd" class="copy" title="Click to copy"></code>
+          <p class="small"><b>Claude app</b> (claude_desktop_config.json)</p>
+          <code id="mcpJson" class="copy" title="Click to copy"></code>
+        </details>
       </div>
       <div class="card">
         <b>Pixabay</b>
@@ -89,14 +97,14 @@
   </aside>
 
   <main id="center">
-    <div id="stageWrap"><div id="stage"></div></div>
+    <div id="stageWrap"><div id="stage"></div><div id="stageEmpty" hidden><div class="ico" data-ic="film" data-size="30"></div><div class="et">Nothing on the timeline yet</div><div class="muted small">Import media and add it, or ask Claude to build a video.</div></div></div>
     <div id="transport">
-      <button class="icon" id="bStart" title="Go to start (Home)"></button>
-      <button class="icon" id="bPrev" title="Back 1 frame (←)"></button>
+      <button class="icon" id="bStart" data-ic="skip-back" title="Go to start (Home)"></button>
+      <button class="icon" id="bPrev" data-ic="step-back" title="Back 1 frame (←)"></button>
       <button class="icon big" id="bPlay" title="Play / pause (Space)"></button>
-      <button class="icon" id="bNext" title="Forward 1 frame (→)"></button>
-      <span id="tc" class="mono">00:00.00</span><span class="muted mono" id="tcTotal">/ 00:00.00</span>
-      <button class="soft small" id="bNote" title="Pin a note here (N)" style="margin-left:14px">+ Note</button>
+      <button class="icon" id="bNext" data-ic="step-fwd" title="Forward 1 frame (→)"></button>
+      <span class="tcbox"><span id="tc" class="mono">00:00.00</span><span class="muted mono" id="tcTotal">/ 00:00.00</span></span>
+      <button class="soft small" id="bNote" data-ic="pin" title="Pin a note here (N)">Note</button>
     </div>
   </main>
 
@@ -111,23 +119,23 @@
 
   <section id="tl">
     <div id="tlBar">
-      <button class="soft small" id="tSplit" title="Split at playhead (S)">Split</button>
-      <button class="soft small" id="tDelete" title="Delete (Del)">Delete</button>
-      <button class="soft small" id="tRipple" title="Delete and close the gap (Shift+Del)">Ripple delete</button>
+      <button class="soft small" id="tSplit" data-ic="scissors" title="Split at playhead (S)">Split</button>
+      <button class="soft small" id="tDelete" data-ic="trash" title="Delete (Del)">Delete</button>
+      <button class="soft small" id="tRipple" data-ic="ripple" title="Delete and close the gap (Shift+Del)">Ripple delete</button>
       <div class="sep"></div>
-      <button class="soft small" id="tAddV">+ Video track</button>
-      <button class="soft small" id="tAddA">+ Audio track</button>
-      <button class="soft small" id="tOrganize">Organize ▾</button>
+      <button class="soft small" id="tAddV" data-ic="plus">Video track</button>
+      <button class="soft small" id="tAddA" data-ic="plus">Audio track</button>
+      <button class="soft small" id="tOrganize" data-ic="layout">Organize</button>
       <div class="grow"></div>
-      <label class="small muted row gap"><input type="checkbox" id="tSnap" checked> Snap</label>
-      <button class="icon" id="zOut" title="Zoom out (-)">−</button>
+      <label class="small muted row gap snapl"><input type="checkbox" id="tSnap" checked> Snap</label>
+      <button class="icon sm" id="zOut" data-ic="minus" title="Zoom out (-)"></button>
       <input type="range" id="zoom" min="10" max="400" value="60">
-      <button class="icon" id="zIn" title="Zoom in (+)">+</button>
-      <button class="soft small" id="zFit">Fit</button>
+      <button class="icon sm" id="zIn" data-ic="plus" title="Zoom in (+)"></button>
+      <button class="soft small" id="zFit" data-ic="fit">Fit</button>
     </div>
     <div id="tlBody">
       <div id="heads"></div>
-      <div id="scroll"><div id="canvas"><div id="ruler"></div><div id="lanes"></div><div id="playhead"><i></i></div></div></div>
+      <div id="scroll"><div id="canvas"><div id="ruler"></div><div id="lanes"></div><div id="playhead"><i></i></div><div id="tlEmpty" hidden><span data-ic="plus" data-size="16"></span><span>Drag media here or press + on a media card</span></div></div></div>
     </div>
   </section>
 </div>
@@ -136,9 +144,10 @@
     <div class="homeHead">
       <div class="brand big"><img src="logo.svg" alt="" width="44" height="44"><span>Cutlight</span></div>
       <div class="grow"></div>
+      <button class="icon" id="hTheme" title="Theme"></button>
       <select id="langSel" class="small" title="Language / Idioma"><option value="pt">Português</option><option value="en">English</option></select>
-      <button class="soft" id="hConnect"><span id="mcpDotHome" class="dot"></span> Connect Claude</button>
-      <button class="soft" id="hOpen">Open file…</button>
+      <button class="soft" id="hConnect"><span id="mcpDotHome" class="dot"></span><span class="lbl2">Connect Claude</span></button>
+      <button class="soft" id="hOpen" data-ic="folder">Open file…</button>
     </div>
     <h2>Your projects</h2>
     <div id="homeGrid"></div>

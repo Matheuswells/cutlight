@@ -11,6 +11,7 @@ pub const START: &str = r####"# Cutlight playbook
 
 You are the editor and motion designer. The user wants a finished, professional video that feels like a real edited video, never a slideshow. Elements must be DYNAMIC: animated, with depth, 3D and isometric objects, camera moves and parallax (see topics "dynamic" and "graphics").
 
+Tools for depth: isometric SVG, CSS 3D, and real WebGL via the bundled three.js (topics "dynamic" and "three").
 Two modes. Pick by looking at the project (get_timeline / get_project):
 A. EDIT footage (someone is talking or there is raw material)  ->  orient, cut, design, animate, verify, direct, learn.
 B. CREATE FROM SCRATCH (nobody has to be talking; a brief, maybe music or narration)  ->  orient, brief, storyboard, build scenes, sound, verify, direct, learn. Read topic "scratch".
@@ -109,7 +110,7 @@ HTML animation contract (so it previews live AND renders frame-exact)
 - Lay out in vw / vh / % so it fits any preset; the page is rendered at the project resolution.
 - Drive animation with CSS @keyframes (animation-fill-mode: both) / Web Animations, OR define window.__seek(t) (t = seconds from clip start) and set the state from t. __seek is the safest for counters, camera moves, morphs, 3D orbits and long timelines. Everything must be a pure function of t: no Math.random() without a seed, no Date.now(), no setTimeout-driven state.
 - Verified to render correctly: gradients, box-shadow stacks, border-radius, inline SVG (paths, gradients, clip-path, 2D transforms), CSS 3D (perspective, transform-style: preserve-3d, rotateX/Y/Z, translateZ, matrix3d), opacity, transforms.
-- Avoid: ::before/::after content, backdrop-filter, mix-blend-mode, <canvas>/<video>/WebGL, external url(). Use real elements. Fake glass with layered translucent gradients + a 1px light border + inset highlight.
+- Avoid: ::before/::after content, backdrop-filter, mix-blend-mode, <video>, external url(). Use real elements. Fake glass with layered translucent gradients + a 1px light border + inset highlight. <canvas> IS supported (2D canvas, and real WebGL through the bundled three.js: see topic "three").
 
 Done = every planned graphic placed and timed, in the selected style, with depth and motion.
 "####;
@@ -129,6 +130,8 @@ ISOMETRIC SVG (2D transforms only; most reliable). A cube at screen (x,y) with e
   Colours c = [top (lightest), left (mid), right (darkest)] from the style palette. Stack and tile cubes for charts (bar = tower), servers, buildings, platforms, products. Animate: grow h from 0 with ease-out (stagger 60-90 ms), lift a block (y - 14 -> 0) and let its soft shadow shrink, assemble from an exploded view (offset each block along the iso axes, then converge), draw edges with stroke-dashoffset.
   Arbitrary iso transform of a flat SVG group: <g transform="matrix(0.866 0.5 -0.866 0.5 cx cy)">...</g> puts a flat drawing on the ground plane; matrix(0.866 0.5 0 1 cx cy) and matrix(0.866 -0.5 0 1 cx cy) are the two wall planes.
 
+REAL 3D (three.js): when you need true lighting, glossy/glass/metal materials, many objects or camera flythroughs, use the bundled three.js (topic "three"); it renders frame-exact like everything else.
+
 CSS 3D OBJECTS (verified).
   Cube: container {perspective:900px}; inner {position:absolute;transform-style:preserve-3d;transform:rotateX(-28deg) rotateY(ang)} with 6 faces {position:absolute;width:S;height:S} using transforms translateZ(S/2), rotateY(90deg) translateZ(S/2), rotateY(180deg) translateZ(S/2), rotateY(-90deg) translateZ(S/2), rotateX(90deg) translateZ(S/2), rotateX(-90deg) translateZ(S/2). Orbit with ang = 38 + t*40.
   Extruded tilted panel (UI card, screen, poster): transform:perspective(800px) rotateX(58deg) rotateZ(-32deg) plus a stack of hard shadows for thickness: box-shadow: 6px 6px 0 #dark1, 12px 12px 0 #dark2, 18px 18px 0 #dark3, 30px 30px 40px rgba(0,0,0,.45). Float it: translateZ / translateY(sin(t*1.6)*8px).
@@ -140,6 +143,43 @@ LIGHT AND DEPTH CUES  One light direction for the whole video (top-left): top fa
 MOTION VOCABULARY  assemble/disassemble, float (sin, 3-4 s), orbit, rise/drop with squash and stretch, draw-on, scan/sweep light, counter ticks, morph (border-radius or SVG path interpolation), ripple, conveyor/marquee, particles (seeded), mask reveals via clip-path (circle, inset, polygon), wipe through a blob. Combine 2-3 per scene, not all.
 
 Performance: keep each HTML under ~300 DOM nodes and ~80 KB; reuse symbols with <use>; avoid hundreds of box-shadows.
+"####;
+
+
+pub const THREE: &str = r####"# three.js: real WebGL 3D inside HTML animations
+
+Cutlight bundles three.js r150 (MIT). Use it for what CSS 3D and isometric SVG cannot do well: real lighting, glossy/metal/glass materials, true perspective, many objects, particle fields, camera flythroughs, rounded organic 3D shapes. For flat or isometric diagrams, SVG is lighter and faster. Mix them freely: a three.js canvas as the "world" with crisp HTML/SVG text above it.
+
+Load it exactly like this (global THREE; no CDN URLs, no ES module imports):
+  <script src="cutlight-lib://three.min.js"></script>
+
+Template for an opaque full-frame scene:
+  <meta name="cutlight-opaque" content="1">
+  <div id="stage" style="position:absolute;left:0;top:0;width:1080px;height:1920px;transform-origin:0 0">
+    <canvas id="gl" style="position:absolute;left:0;top:0;width:1080px;height:1920px"></canvas>
+    ...HTML / SVG overlay (titles, labels) goes here, after the canvas...
+  </div>
+  <script>
+   var stage=document.getElementById('stage'); stage.style.transform='scale('+(innerWidth/1080)+')';
+   var renderer=new THREE.WebGLRenderer({canvas:document.getElementById('gl'),antialias:true,alpha:false});
+   renderer.setPixelRatio(1); renderer.setSize(innerWidth,innerHeight,false); renderer.setClearColor(0x0e1116); renderer.toneMapping=THREE.ACESFilmicToneMapping;
+   var scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(35,1080/1920,0.1,100);
+   /* build lights and meshes ONCE here */
+   window.__seek=function(t){ /* set every position / rotation / camera / material value as a pure function of t */ renderer.render(scene,cam); };
+   window.__seek(0);
+  </script>
+
+Rules (they make preview and render identical)
+- Call renderer.render INSIDE __seek, synchronously: the exporter reads the canvas right after __seek returns. Never use requestAnimationFrame, THREE.Clock, Date.now, setTimeout state or unseeded Math.random.
+- alpha:false for opaque scenes (smaller and faster). For a transparent overlay on top of footage use alpha:true with renderer.setClearColor(0x000000,0) and do NOT add the opaque meta tag.
+- Size the drawing buffer to the real frame (innerWidth x innerHeight) while CSS stays 1080x1920: draft renders become 4x cheaper and look identical. Do not give the canvas width/height attributes.
+- Lighting starting point (verified, r150 legacy lights): HemisphereLight 0.55, DirectionalLight 1.1, PointLights 1.2-1.8, ACESFilmic tone mapping, camera at ~17-19 units for objects of radius ~1. If surfaces look white, lower the intensities. Cost is about 0.4 s per 540x960 frame.
+- The canvas is baked into the frame at its position; HTML/SVG layers above it stay crisp. Put the canvas first (below) and overlays after it.
+- Isometric look: THREE.OrthographicCamera, camera.position.set(d,d,d), camera.lookAt(0,0,0); or rotate the group by x=0.615 rad, y=0.785 rad.
+- Lighting: one DirectionalLight from the top-left (no shadow maps: slow) plus a HemisphereLight or AmbientLight. Match the style: Modern = MeshStandardMaterial (roughness .45, metalness .2) with emissive accent edges (EdgesGeometry + LineSegments); Clean Healthy = MeshStandardMaterial roughness .9, soft hemisphere light, rounded shapes (SphereGeometry, CapsuleGeometry, TorusGeometry); Liquid = MeshPhysicalMaterial (clearcoat 1, roughness .15, iridescence, optionally transmission) with strong coloured point lights for specular glints.
+- No loaders, no external textures, no FontLoader. Generate textures with a small 2D canvas (THREE.CanvasTexture) or use vertex colours; put text in HTML/SVG.
+- Keep it light: under ~200 meshes, under ~200k triangles, no post-processing, no shadows, setPixelRatio(1). Every frame is rendered and encoded; heavy scenes make long videos take a long time.
+- If the user asks for something three.js can't reasonably do offline (huge models, video textures), say so and propose an SVG/CSS 3D version.
 "####;
 
 pub const GRAPHICS: &str = r####"# Vector graphics: how to draw them well
@@ -237,6 +277,7 @@ pub fn topic(name: &str) -> Option<&'static str> {
         "scratch" | "create" | "from-scratch" => SCRATCH,
         "animate" => ANIMATE,
         "dynamic" | "3d" | "isometric" | "iso" | "camera" => DYNAMIC,
+        "three" | "threejs" | "webgl" => THREE,
         "graphics" | "svg" | "vector" => GRAPHICS,
         "assets" | "pixabay" | "icons" => ASSETS,
         "composition" | "layouts" | "layout" => COMPOSITION,
@@ -250,16 +291,16 @@ pub fn topic(name: &str) -> Option<&'static str> {
 }
 
 pub const TOPICS: &[&str] = &[
-    "start", "cut", "design", "scratch", "animate", "dynamic", "graphics", "assets", "composition", "captions", "audio", "verify", "direct", "rules", "all",
+    "start", "cut", "design", "scratch", "animate", "dynamic", "three", "graphics", "assets", "composition", "captions", "audio", "verify", "direct", "rules", "all",
 ];
 
 pub fn guide(name: &str, rules: &[Rule], style_id: &str) -> Result<String, String> {
     let mut out = if name == "all" {
-        [START, CUT, DESIGN, SCRATCH, ANIMATE, DYNAMIC, GRAPHICS, ASSETS, COMPOSITION, CAPTIONS, AUDIO, VERIFY, DIRECT, RULES].join("\n---\n")
+        [START, CUT, DESIGN, SCRATCH, ANIMATE, DYNAMIC, THREE, GRAPHICS, ASSETS, COMPOSITION, CAPTIONS, AUDIO, VERIFY, DIRECT, RULES].join("\n---\n")
     } else {
         topic(name).ok_or_else(|| format!("unknown topic '{name}'. Topics: {}", TOPICS.join(", ")))?.to_string()
     };
-    if matches!(name, "all" | "start" | "overview" | "" | "design" | "scratch" | "create" | "from-scratch" | "animate" | "dynamic" | "3d" | "isometric" | "iso" | "camera" | "graphics" | "svg" | "vector" | "captions" | "audio") {
+    if matches!(name, "all" | "start" | "overview" | "" | "design" | "scratch" | "create" | "from-scratch" | "animate" | "dynamic" | "3d" | "isometric" | "iso" | "camera" | "three" | "threejs" | "webgl" | "graphics" | "svg" | "vector" | "captions" | "audio") {
         out.push_str(&style_block(style_id));
     }
     if !rules.is_empty() {

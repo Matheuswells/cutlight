@@ -1,4 +1,5 @@
 import { lang, setLang } from './i18n.js';
+import { ic } from './icons.js';
 import { Preview, renderHtmlFrames } from './preview.js';
 
 const T = window.__TAURI__;
@@ -23,6 +24,7 @@ let S = null; // latest snapshot from Rust
 let preview;
 const ui = { t: 0, playing: false, sel: null, pps: 60, snap: true, presets: [], renderModal: false, base: 0, base0: 0 };
 const waves = new Map();
+const LIBS = {}; // bundled libraries by file name (loaded once, inlined into HTML clips)
 
 const P = () => S.project;
 const media = (id) => P().media.find((m) => m.id === id);
@@ -144,7 +146,7 @@ async function renderHome() {
     c.className = 'pcard';
     const bg = e.thumb ? `background-image:url('${convertFileSrc(e.thumb)}')` : '';
     const ratio = e.width && e.height ? `${e.width}×${e.height}` : '';
-    c.innerHTML = `<div class="pv" style="${bg}">${e.thumb ? '' : esc((e.name || '?').slice(0, 1).toUpperCase())}${e.duration ? `<span class="tag">${dur(e.duration)}</span>` : ''}</div>
+    c.innerHTML = `<div class="pv" style="${bg}">${e.thumb ? '' : ic('film', 34)}${e.duration ? `<span class="tag">${dur(e.duration)}</span>` : ''}</div>
       <button class="px" title="Remove from list">✕</button>
       <div class="pm"><div class="pn">${esc(e.name)}</div><div class="ps">${ago(e.updated)} · ${e.clips} clip${e.clips === 1 ? '' : 's'} · ${ratio}</div></div>`;
     c.onclick = () => openPath(e.path);
@@ -166,8 +168,14 @@ async function connectClaude(btn, msgEl) {
     const r = await invoke('connect_claude');
     ui.linked = true;
     renderMcp();
-    msg.textContent = r.output || 'Connected.';
-    toast('Connected. Fully quit and reopen the Claude app to load the Cutlight tools.');
+    if (r.claudeRunning) {
+      // the Claude app rewrites its config on exit; Cutlight re-registers by itself once it has closed
+      msg.textContent = 'The Claude app is open. Quit it completely (also from the tray icon) and open it again. Cutlight finishes the connection by itself.';
+      toast('Quit the Claude app completely and open it again');
+    } else {
+      msg.textContent = 'Connected. Open the Claude app to see the Cutlight tools.';
+      toast('Connected. Open the Claude app to see the Cutlight tools.');
+    }
     return true;
   } catch (e) {
     toast(String(e).slice(0, 200));
@@ -187,7 +195,7 @@ function connectModal() {
     <p class="muted">Let Claude edit with you: cut, animate, add graphics and render. One click links this editor to the Claude app.</p>
     <p class="muted small" id="cmMsg"></p>
     <div class="row gap" style="margin-top:14px;justify-content:flex-end"><button class="soft" id="cmNo">Not now</button><button class="primary" id="cmGo">Connect to Claude</button></div>`);
-  $('#cmNo', m).onclick = closeModal;
+  $('#cmNo', m).onclick = () => { invoke('settings_dismiss_connect'); closeModal(); };
   $('#cmGo', m).onclick = async (e) => {
     const ok = await connectClaude(e.currentTarget, $('#cmMsg', m));
     if (ok) setTimeout(closeModal, 1400);
@@ -196,11 +204,15 @@ function connectModal() {
 async function promptConnectOnce() {
   if (ui.prompted || !S.mcpPort) return;
   ui.prompted = true;
-  if (!(await refreshLink()) && $('#modal').hidden) connectModal();
+  const linked = await refreshLink();
+  const st = (S.settings || {});
+  // only nag a user who never connected and never dismissed it
+  if (!linked && !st.autoLink && !st.connectDismissed && $('#modal').hidden) connectModal();
 }
 
 let homeShown = false;
 function onState() {
+  if (window.__loadLibs) window.__loadLibs();
   promptConnectOnce();
   const home = $('#home');
   if (!S.open) {
@@ -229,6 +241,9 @@ function onState() {
   renderInspector();
   renderExport();
   renderTimeline();
+  const nClips = p.tracks.reduce((a, t) => a + t.clips.length, 0);
+  $('#stageEmpty').hidden = nClips > 0;
+  $('#tlEmpty').hidden = nClips > 0;
   renderMcp();
   renderRenderModal();
   $('#tcTotal').textContent = '/ ' + fmt(S.duration);
@@ -240,6 +255,10 @@ function renderMcp() {
   ['#mcpDot', '#mcpDotTop', '#mcpDotHome'].forEach((s) => $(s).classList.toggle('ok', !!port && !!ui.linked));
   ['#bConnectTop', '#hConnect'].forEach((s) => { const b = $(s); b.lastChild.textContent = ui.linked ? ' Claude connected' : ' Connect Claude'; });
   $('#bConnect').textContent = ui.linked ? 'Reconnect to the Claude app' : 'Connect to the Claude app';
+  // connected once, but the Claude app dropped the entry (it rewrites its config on exit): Cutlight re-adds it when the app is closed
+  const waiting = !ui.linked && S.settings && S.settings.autoLink;
+  if (waiting) $('#connectMsg').textContent = 'Waiting for the Claude app to close, then Cutlight reconnects by itself.';
+  else if (ui.linked && $('#connectMsg').textContent.startsWith('Waiting')) $('#connectMsg').textContent = '';
   const url = `http://127.0.0.1:${port || 47321}/mcp`;
   $('#mcpCmd').textContent = `claude mcp add --transport http cutlight ${url}`;
   $('#mcpJson').textContent = JSON.stringify({ mcpServers: { cutlight: { command: S.exe || 'cutlight', args: ['--mcp-stdio'] } } }, null, 2);
@@ -394,14 +413,14 @@ function renderInspector() {
   const visual = c.kind !== 'audio';
   const hasAudio = c.kind === 'audio' || (c.kind === 'video' && m && m.hasAudio);
   let h = `<h4>${esc(c.label || c.kind)}</h4><div class="muted small">${c.kind} · ${fmt(c.start)} → ${fmt(c.start + c.duration)}</div>`;
-  h += `<div class="card">`;
+  h += `<div class="card"><div class="cap">Playback</div>`;
   h += slider('Speed', 'speed', c, 0.25, 4, 0.05, (v) => v.toFixed(2) + '×');
   if (hasAudio) h += slider('Volume', 'volume', c, 0, 2, 0.05, (v) => Math.round(v * 100) + '%');
   h += slider('Fade in', 'fadeIn', c, 0, 3, 0.1, (v) => v.toFixed(1) + 's');
   h += slider('Fade out', 'fadeOut', c, 0, 3, 0.1, (v) => v.toFixed(1) + 's');
   h += `</div>`;
   if (visual && c.kind !== 'html') {
-    h += `<div class="card"><div class="field"><label>Framing</label><div class="seg-btns" data-fit>${['fit', 'fill'].map((x) => `<button data-v="${x}" class="${c.fit === x ? 'on' : ''}">${x === 'fit' ? 'Fit' : 'Fill'}</button>`).join('')}</div><span></span></div>`;
+    h += `<div class="card"><div class="cap">Picture</div><div class="field"><label>Framing</label><div class="seg-btns" data-fit>${['fit', 'fill'].map((x) => `<button data-v="${x}" class="${c.fit === x ? 'on' : ''}">${x === 'fit' ? 'Fit' : 'Fill'}</button>`).join('')}</div><span></span></div>`;
     h += slider('Opacity', 'opacity', c, 0, 1, 0.05, (v) => Math.round(v * 100) + '%');
     h += slider('Scale', 'scale', c, 0.1, 2, 0.05, (v) => Math.round(v * 100) + '%');
     h += slider('Position X', 'x', c, 0, 1, 0.01, (v) => Math.round(v * 100) + '%');
@@ -410,18 +429,18 @@ function renderInspector() {
   }
   if (t.kind === 'video' && idx > 0) {
     const tr = c.transition;
-    h += `<div class="card"><div class="field"><label>Transition</label><select id="trKind">${[['none', 'None'], ['dissolve', 'Dissolve'], ['fade-black', 'Dip to black'], ['slide-left', 'Slide ←'], ['slide-right', 'Slide →'], ['slide-up', 'Slide ↑'], ['slide-down', 'Slide ↓']].map(([k, l]) => `<option value="${k}" ${(tr ? tr.kind : 'none') === k ? 'selected' : ''}>${l}</option>`).join('')}</select><span></span></div>`;
+    h += `<div class="card"><div class="cap">Transition</div><div class="field"><label>Type</label><select id="trKind">${[['none', 'None'], ['dissolve', 'Dissolve'], ['fade-black', 'Dip to black'], ['slide-left', 'Slide ←'], ['slide-right', 'Slide →'], ['slide-up', 'Slide ↑'], ['slide-down', 'Slide ↓']].map(([k, l]) => `<option value="${k}" ${(tr ? tr.kind : 'none') === k ? 'selected' : ''}>${l}</option>`).join('')}</select><span></span></div>`;
     if (tr) h += `<div class="field"><label>Length</label><input type="range" id="trDur" min="0.1" max="2" step="0.05" value="${tr.duration}"><span class="v">${tr.duration.toFixed(2)}s</span></div>`;
     h += `</div>`;
   }
   h += `<div class="row gap" style="flex-wrap:wrap">`;
   if (c.kind === 'video') {
-    if (hasAudio && c.audio) h += `<button class="soft small" data-act="detach_audio">Detach audio</button><button class="soft small" data-act="remove_audio">Delete audio</button>`;
+    if (hasAudio && c.audio) h += `<button class="soft small" data-act="detach_audio">${ic("volume", 14)}Detach audio</button><button class="soft small" data-act="remove_audio">${ic("volume-x", 14)}Delete audio</button>`;
     else if (m && m.hasAudio) h += `<button class="soft small" data-act="restore_audio">Restore audio</button>`;
-    h += `<button class="soft small" data-act="remove_video">Delete video (keep audio)</button>`;
+    h += `<button class="soft small" data-act="remove_video">${ic("eye-off", 14)}Delete video (keep audio)</button>`;
   }
   if (c.kind === 'html') h += `<button class="soft small" data-act="edit_html">Edit HTML</button>`;
-  h += `<button class="soft small danger" data-act="delete">Delete clip</button></div>`;
+  h += `<button class="soft small danger" data-act="delete">${ic("trash", 14)}Delete clip</button></div>`;
   box.innerHTML = h;
 
   $$('input[type=range][data-k]', box).forEach((r) => {
@@ -583,11 +602,11 @@ function renderTimeline() {
   p.tracks.forEach((tr) => {
     const h = document.createElement('div');
     h.className = 'head ' + tr.kind;
-    h.innerHTML = `<div class="nm" title="Double-click to rename">${esc(tr.name)}</div><div class="tb">
-      <button data-a="muted" class="${tr.muted ? 'on' : ''}" title="Mute">M</button>
-      ${tr.kind === 'video' ? `<button data-a="hidden" class="${tr.hidden ? 'on' : ''}" title="Hide">H</button>` : ''}
-      <button data-a="locked" class="${tr.locked ? 'on' : ''}" title="Lock">L</button>
-      <button data-a="del" title="Remove track">✕</button></div>`;
+    h.innerHTML = `<div class="nm" title="Double-click to rename">${ic(tr.kind === 'audio' ? 'music' : 'film', 13)}<span>${esc(tr.name)}</span></div><div class="tb">
+      <button data-a="muted" class="${tr.muted ? 'on' : ''}" title="${tr.muted ? 'Unmute' : 'Mute'}">${ic(tr.muted ? 'volume-x' : 'volume', 14)}</button>
+      ${tr.kind === 'video' ? `<button data-a="hidden" class="${tr.hidden ? 'on' : ''}" title="${tr.hidden ? 'Show' : 'Hide'}">${ic(tr.hidden ? 'eye-off' : 'eye', 14)}</button>` : ''}
+      <button data-a="locked" class="${tr.locked ? 'on' : ''}" title="${tr.locked ? 'Unlock' : 'Lock'}">${ic(tr.locked ? 'lock' : 'unlock', 14)}</button>
+      <button data-a="del" title="Remove track">${ic('x', 14)}</button></div>`;
     $('.nm', h).ondblclick = async () => { const n = await ask('Track name', tr.name); if (n) op('set_track', { id: tr.id, name: n }); };
     $$('button', h).forEach((b) => (b.onclick = async () => {
       const a = b.dataset.a;
@@ -772,7 +791,18 @@ function setZoom(v) {
 function init() {
   preview = new Preview($('#stage'), convertFileSrc);
   // cutlight-asset://file tokens in HTML clips -> local files for the live preview (the renderer inlines them)
-  preview.resolve = (html) => html.replace(/cutlight-asset:\/\/([A-Za-z0-9._-]+)/g, (_, n) => convertFileSrc(S.assetsDir + '/' + n));
+  const resolveHtml = (html) => html
+    .replace(/cutlight-asset:\/\/([A-Za-z0-9._-]+)/g, (_, n) => convertFileSrc(S.assetsDir + '/' + n))
+    // bundled libraries (three.js) are inlined: sandboxed preview/render frames can't load them by URL
+    .replace(/<script[^>]*src=["']cutlight-lib:\/\/([A-Za-z0-9._-]+)["'][^>]*>\s*<\/script>/g, (_, n) => (LIBS[n] ? '<script>' + LIBS[n].replace(/<\/script/gi, '<\\/script') + '</script>' : `<script>console.error('cutlight-lib ${n} is not loaded')</script>`));
+  preview.resolve = resolveHtml;
+  window.__resolveHtml = resolveHtml;
+  window.__loadLibs = async () => {
+    for (const n of ['three.min.js']) {
+      if (LIBS[n] || !S || !S.libsDir) continue;
+      try { LIBS[n] = await (await fetch(convertFileSrc(S.libsDir + '/' + n))).text(); } catch { /* retried on next state */ }
+    }
+  };
   $('#bNoteAdd').onclick = addNote;
   $('#bNote').onclick = addNote;
   $('#bNoteCopy').onclick = copyNotes;
@@ -786,11 +816,12 @@ function init() {
     toast('Pixabay key saved');
   };
   op('list_styles').then((l) => { ui.styles = l; if (S && S.open) renderStyle(); });
-  $('#bUndo').innerHTML = I.undo; $('#bRedo').innerHTML = I.redo;
-  $('#bStart').innerHTML = I.start; $('#bPrev').innerHTML = I.prev; $('#bNext').innerHTML = I.next; $('#bPlay').innerHTML = I.play;
+  $('#bPlay').innerHTML = I.play;
+  initIcons();
+  initTheme();
 
   $('#bUndo').onclick = () => op('undo'); $('#bRedo').onclick = () => op('redo');
-  $('#bHome').onclick = async () => { pause(); await op('close_project'); };
+  $('#bHome').onclick = async () => { pause(); await makeHtmlThumb(); await op('close_project'); };
   $('#hOpen').onclick = openDialog;
   $('#langSel').value = lang;
   $('#langSel').onchange = (e) => setLang(e.target.value);
@@ -851,7 +882,7 @@ function init() {
   listen('html-render', async (e) => {
     const { key, html, width, height, fps, frames } = e.payload;
     try {
-      await renderHtmlFrames({ html, width, height, fps, frames }, (buf) => invoke('html_frame', buf, { headers: { 'x-key': key } }));
+      await renderHtmlFrames({ html: window.__resolveHtml(html), width, height, fps, frames }, (buf) => invoke('html_frame', buf, { headers: { 'x-key': key } }));
       await invoke('html_finish', { key });
     } catch (err) { await invoke('html_finish', { key, error: String(err) }); }
   });
@@ -893,6 +924,57 @@ function init() {
   invoke('get_state').then((s) => { S = s; onState(); setTime(0); });
 }
 
+// Preview for HTML-only projects: render one frame of the first scene and hand it to the start screen.
+async function makeHtmlThumb() {
+  try {
+    const p = P();
+    let first = null;
+    p.tracks.forEach((t) => t.clips.forEach((c) => {
+      if (['html', 'video', 'image'].includes(c.kind) && (!first || c.start < first.start)) first = c;
+    }));
+    if (!first || first.kind !== 'html' || !first.html || !S.path) return;
+    const off = Math.min(2.5, first.duration * 0.3);
+    const wrap = `<script>(function(){var s=window.__seek;if(s){window.__seek=function(t){s(t+${off})};window.__seek(0)}})()</` + 'script>';
+    const html = /<\/body>/i.test(first.html) ? first.html.replace(/<\/body>/i, wrap + '</body>') : first.html + wrap;
+    const W = 360, H = Math.round((W * p.settings.height) / p.settings.width);
+    let png = null;
+    await renderHtmlFrames({ html: window.__resolveHtml(html), width: W, height: H, fps: 1, frames: 1 }, async (b) => { png = b; });
+    if (png) await invoke('set_thumb', png, { headers: { 'x-path': encodeURIComponent(S.path) } });
+  } catch { /* the start screen falls back to a placeholder */ }
+}
+
+function initIcons() {
+  $$('[data-ic]').forEach((el) => {
+    if (el.querySelector(':scope > svg.ic')) return;
+    el.insertAdjacentHTML('afterbegin', ic(el.dataset.ic, +el.dataset.size || 15));
+  });
+}
+
+// ---------------- theme ----------------
+const THEMES = ['auto', 'light', 'dark'];
+function applyTheme(mode) {
+  const root = document.documentElement;
+  if (mode === 'light' || mode === 'dark') root.dataset.theme = mode; else delete root.dataset.theme;
+  const icon = mode === 'light' ? 'sun' : mode === 'dark' ? 'moon' : 'monitor';
+  const label = { light: 'Theme: light', dark: 'Theme: dark', auto: 'Theme: follow system' }[mode];
+  ['#bTheme', '#hTheme'].forEach((s) => { const b = $(s); if (b) { b.innerHTML = ic(icon, 16); b.title = label; } });
+  try { T.window.getCurrentWindow().setTheme(mode === 'auto' ? null : mode); } catch { /* optional: native title bar follows */ }
+}
+function initTheme() {
+  let mode = 'auto';
+  try { mode = localStorage.getItem('theme') || 'auto'; } catch {}
+  if (!THEMES.includes(mode)) mode = 'auto';
+  applyTheme(mode);
+  const next = () => {
+    mode = THEMES[(THEMES.indexOf(mode) + 1) % THEMES.length];
+    try { localStorage.setItem('theme', mode); } catch {}
+    applyTheme(mode);
+    toast(mode === 'auto' ? 'Theme: follow system' : mode === 'light' ? 'Theme: light' : 'Theme: dark');
+  };
+  $('#bTheme').onclick = next;
+  $('#hTheme').onclick = next;
+}
+
 function fitZoom() {
   const w = sc().clientWidth - 40;
   setZoom(w / Math.max(S.duration, 5));
@@ -930,4 +1012,13 @@ function onKey(e) {
   else if (k === '-') setZoom(ui.pps / 1.3);
 }
 
-init();
+// A broken init would leave a dead window: show the error instead of failing silently.
+function showFatal(e) {
+  const d = document.createElement('pre');
+  d.style.cssText = 'position:fixed;left:12px;right:12px;bottom:12px;z-index:999;margin:0;padding:12px;background:#3a1212;color:#ffd7d7;border-radius:10px;font:12px/1.4 ui-monospace,Consolas,monospace;white-space:pre-wrap;user-select:text';
+  d.textContent = 'Cutlight UI error:\n' + (e && e.stack ? e.stack : String(e));
+  document.body.appendChild(d);
+}
+addEventListener('error', (ev) => showFatal(ev.error || ev.message));
+addEventListener('unhandledrejection', (ev) => showFatal(ev.reason));
+try { init(); } catch (e) { showFatal(e); }

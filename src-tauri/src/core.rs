@@ -56,6 +56,7 @@ impl Core {
             "mcpPort": self.mcp_port.load(Ordering::Relaxed),
             "exe": crate::connect::exe_path(),
             "assetsDir": crate::store::app_dir(self).join("assets").to_string_lossy(),
+            "libsDir": crate::store::app_dir(self).join("libs").to_string_lossy(),
             "settings": crate::settings::public(self),
         })
     }

@@ -277,3 +277,40 @@ pub fn expand_tokens(core: &Shared, html: &str) -> String {
     out.push_str(rest);
     out
 }
+
+// ---------------------------------------------------------------------------------------------
+// Bundled libraries (three.js). HTML refers to them as `cutlight-lib://three.min.js`; the UI resolves that to a local file.
+// ---------------------------------------------------------------------------------------------
+
+pub fn libs_dir(core: &crate::core::Core) -> PathBuf {
+    crate::store::app_dir(core).join("libs")
+}
+
+/// Copy the bundled libs next to the app data so previews and renders load them from one stable path.
+pub fn install_libs(core: &crate::core::Core) {
+    use tauri::Manager;
+    let dest = libs_dir(core);
+    let _ = std::fs::create_dir_all(&dest);
+    let mut sources: Vec<PathBuf> = vec![];
+    if let Ok(me) = std::env::current_exe() {
+        if let Some(d) = me.parent() {
+            sources.push(d.join("libs"));
+        }
+    }
+    if let Ok(r) = core.app.path().resource_dir() {
+        sources.push(r.join("libs"));
+    }
+    sources.push(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("libs"));
+    for src in sources {
+        if let Ok(rd) = std::fs::read_dir(&src) {
+            for e in rd.flatten() {
+                let to = dest.join(e.file_name());
+                let same = std::fs::metadata(&to).map(|m| m.len()).ok() == e.metadata().map(|m| m.len()).ok();
+                if !same {
+                    let _ = std::fs::copy(e.path(), &to);
+                }
+            }
+            return;
+        }
+    }
+}

@@ -154,3 +154,21 @@ pub fn touch(core: &Shared) {
         }
     }
 }
+
+/// Preview for projects whose first picture is an HTML scene: the UI renders a frame and sends the PNG.
+pub fn set_thumb(core: &Shared, project_path: &str, png: &[u8]) -> Result<(), String> {
+    let dir = app_dir(core).join("thumbs");
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let mut h = DefaultHasher::new();
+    ("html-thumb", project_path).hash(&mut h);
+    let file = dir.join(format!("{:016x}.png", h.finish()));
+    std::fs::write(&file, png).map_err(|e| e.to_string())?;
+    let _g = LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let mut list = read_raw(core);
+    if let Some(e) = list.iter_mut().find(|e| e["path"].as_str() == Some(project_path)) {
+        e["thumb"] = json!(file.to_string_lossy());
+        e["thumbKey"] = json!("html");
+    }
+    write_raw(core, &list);
+    Ok(())
+}

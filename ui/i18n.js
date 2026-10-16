@@ -107,6 +107,26 @@ Object.assign(PT, {
   'No rules yet.': 'Ainda sem regras.', 'Delete rule': 'Apagar regra',
 });
 
+Object.assign(PT, {
+  'Projects': 'Projetos', 'Import media': 'Importar mídia', 'Add note at playhead': 'Adicionar nota no cursor', 'Video track': 'Trilha de vídeo', 'Audio track': 'Trilha de áudio',
+  'Organize': 'Organizar', 'Note': 'Nota', 'Manual setup': 'Configuração manual', 'Claude Code (terminal)': 'Claude Code (terminal)', 'Claude app': 'App do Claude',
+  'Nothing on the timeline yet': 'Nada na timeline ainda', 'Import media and add it, or ask Claude to build a video.': 'Importe mídia e adicione, ou peça ao Claude para criar um vídeo.',
+  'Drag media here or press + on a media card': 'Arraste mídia para cá ou clique em + em um card de mídia', 'Media to transcribe': 'Mídia para transcrever',
+  'Theme': 'Tema', 'Theme: light': 'Tema: claro', 'Theme: dark': 'Tema: escuro', 'Theme: follow system': 'Tema: seguir o sistema',
+  'Playback': 'Reprodução', 'Picture': 'Imagem', 'Type': 'Tipo', 'Sample rate': 'Amostragem', 'Unmute': 'Reativar som', 'Show': 'Mostrar',
+  'Unlock': 'Desbloquear', 'Remove track': 'Remover trilha',
+});
+
+Object.assign(PT, {
+  'The Claude app is open. Quit it completely (also from the tray icon) and open it again. Cutlight finishes the connection by itself.': 'O app do Claude está aberto. Feche-o por completo (inclusive pelo ícone da bandeja) e abra de novo. O Cutlight termina a conexão sozinho.',
+  'Quit the Claude app completely and open it again': 'Feche o app do Claude por completo e abra de novo',
+  'Connected. Open the Claude app to see the Cutlight tools.': 'Conectado. Abra o app do Claude para ver as ferramentas do Cutlight.',
+});
+
+Object.assign(PT, {
+  'Waiting for the Claude app to close, then Cutlight reconnects by itself.': 'Aguardando o app do Claude fechar; depois o Cutlight reconecta sozinho.',
+});
+
 const plural = (n, a, b) => (Number(n) === 1 ? a : b);
 const PATTERNS = [
   [/^(\d+) clips?$/, (m) => `${m[1]} ${plural(m[1], 'clipe', 'clipes')}`],

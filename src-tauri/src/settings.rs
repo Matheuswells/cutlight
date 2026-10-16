@@ -18,6 +18,10 @@ pub struct Rule {
 pub struct AppSettings {
     pub pixabay_key: String,
     pub rules: Vec<Rule>,
+    /// The user connected Claude once: re-register automatically if the Claude app rewrites its config
+    pub auto_link: bool,
+    /// The user chose "Not now": never pop the connect dialog on its own again
+    pub connect_dismissed: bool,
 }
 
 fn path(core: &Core) -> std::path::PathBuf {
@@ -36,7 +40,7 @@ pub fn save(core: &Core, s: &AppSettings) {
 /// What the UI may see: never the key itself.
 pub fn public(core: &Core) -> Value {
     let s = load(core);
-    json!({ "pixabayConfigured": !s.pixabay_key.trim().is_empty(), "rules": s.rules })
+    json!({ "pixabayConfigured": !s.pixabay_key.trim().is_empty(), "rules": s.rules, "autoLink": s.auto_link, "connectDismissed": s.connect_dismissed })
 }
 
 pub fn set_pixabay_key(core: &Core, key: &str) {
@@ -67,4 +71,14 @@ pub fn remove_rule(core: &Core, index: usize) {
         s.rules.remove(index);
         save(core, &s);
     }
+}
+
+pub fn set_flag(core: &Core, name: &str, value: bool) {
+    let mut s = load(core);
+    match name {
+        "auto_link" => s.auto_link = value,
+        "connect_dismissed" => s.connect_dismissed = value,
+        _ => return,
+    }
+    save(core, &s);
 }

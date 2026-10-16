@@ -4,6 +4,7 @@
 
 use serde_json::{json, Value};
 use std::path::PathBuf;
+use std::process::Command;
 
 fn home() -> PathBuf {
     PathBuf::from(std::env::var("USERPROFILE").or_else(|_| std::env::var("HOME")).unwrap_or_default())
@@ -88,4 +89,27 @@ pub fn run() -> Result<Value, String> {
         written.push(p.to_string_lossy().to_string());
     }
     Ok(json!({ "ok": true, "files": written }))
+}
+
+/// Is the Claude *desktop app* running? (The Claude Code CLI also has a claude.exe: it must not count.)
+pub fn claude_running() -> bool {
+    #[cfg(windows)]
+    {
+        let mut c = Command::new("powershell");
+        crate::media::quiet(&mut c).args([
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            "(Get-Process -Name Claude -ErrorAction SilentlyContinue | Where-Object { $_.Path -like '*WindowsApps*Claude*' -or $_.Path -like '*AnthropicClaude*' } | Measure-Object).Count",
+        ]);
+        c.output().map(|o| String::from_utf8_lossy(&o.stdout).trim().parse::<u32>().unwrap_or(0) > 0).unwrap_or(false)
+    }
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("pgrep").args(["-f", "Claude.app/Contents/MacOS/Claude"]).output().map(|o| o.status.success()).unwrap_or(false)
+    }
+    #[cfg(not(any(windows, target_os = "macos")))]
+    {
+        false
+    }
 }

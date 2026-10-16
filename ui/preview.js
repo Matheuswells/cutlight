@@ -40,7 +40,21 @@ function snap(W,H){
     }
     cl[i].setAttribute('style',txt+'animation:none!important;transition:none!important;');
   }
+  // canvas / WebGL (three.js): bake the current pixels into an <img>. Must happen in the same task as the render call in __seek.
+  [].slice.call(root.querySelectorAll('canvas')).forEach(function(c){
+    var cc=cl[live.indexOf(c)];if(!cc||!cc.parentNode)return;
+    var opaque=false,url='';
+    try{var g=c.getContext('webgl2')||c.getContext('webgl');if(g){var a=g.getContextAttributes();opaque=!!a&&!a.alpha}}catch(e){}
+    try{url=c.toDataURL(opaque?'image/jpeg':'image/png',.92)}catch(e){}
+    var im=document.createElement('img');im.setAttribute('style',cc.getAttribute('style')||'');
+    if(url)im.setAttribute('src',url);
+    cc.parentNode.replaceChild(im,cc);
+  });
   [].slice.call(clone.querySelectorAll('script,head')).forEach(function(n){n.remove()});
+  // html/body collapse to their content inside a foreignObject: give them the frame size so their backgrounds fill it
+  var full=';width:'+W+'px;height:'+H+'px;overflow:hidden';
+  clone.setAttribute('style',(clone.getAttribute('style')||'')+full);
+  var cb=clone.querySelector('body');if(cb)cb.setAttribute('style',(cb.getAttribute('style')||'')+full);
   clone.setAttribute('xmlns','http://www.w3.org/1999/xhtml');
   var x=new XMLSerializer().serializeToString(clone);
   return '<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'"><foreignObject width="100%" height="100%">'+x+'</foreignObject></svg>';
@@ -225,7 +239,7 @@ export async function renderHtmlFrames({ html, width, height, fps, frames }, sen
   const loaded = new Promise((r) => (f.onload = r));
   document.body.appendChild(f);
   await loaded;
-  await sleep(200);
+  await sleep(450);
   const cv = document.createElement('canvas');
   cv.width = width;
   cv.height = height;
