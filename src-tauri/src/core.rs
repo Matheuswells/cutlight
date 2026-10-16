@@ -25,6 +25,8 @@ pub struct Core {
     pub redo: Mutex<Vec<String>>,
     pub path: Mutex<Option<PathBuf>>,
     pub dirty: AtomicBool,
+    /// false = start screen (no project open)
+    pub open: AtomicBool,
     pub ff: Ffmpeg,
     pub cache_root: PathBuf,
     pub render: Mutex<RenderStatus>,
@@ -46,6 +48,7 @@ impl Core {
             "project": &*p,
             "path": self.path.lock().unwrap().as_ref().map(|p| p.to_string_lossy().to_string()),
             "dirty": self.dirty.load(Ordering::Relaxed),
+            "open": self.open.load(Ordering::Relaxed),
             "canUndo": !self.undo.lock().unwrap().is_empty(),
             "canRedo": !self.redo.lock().unwrap().is_empty(),
             "duration": p.duration(),

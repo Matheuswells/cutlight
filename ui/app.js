@@ -103,12 +103,93 @@ function menu(x, y, items) {
 }
 
 // ---------------- state ----------------
+function ago(sec) {
+  const d = Math.max(0, Date.now() / 1000 - sec);
+  if (d < 60) return 'just now';
+  if (d < 3600) return Math.floor(d / 60) + ' min ago';
+  if (d < 86400) return Math.floor(d / 3600) + ' h ago';
+  if (d < 86400 * 30) return Math.floor(d / 86400) + ' days ago';
+  return new Date(sec * 1000).toLocaleDateString();
+}
+async function newProject() {
+  const n = await ask('Name your project', 'Untitled');
+  if (n === null) return;
+  ui.sel = null;
+  pause();
+  await op('new_project', { name: n.trim() || 'Untitled' });
+  setTime(0);
+}
+async function openPath(path) {
+  ui.sel = null;
+  pause();
+  const r = await op('open_project', { path });
+  if (r) setTime(0);
+}
+async function openDialog() {
+  const p = await T.dialog.open({ filters: [{ name: 'Cutlight project', extensions: ['cutlight'] }] });
+  if (p) openPath(p);
+}
+async function renderHome() {
+  const list = (await op('list_projects')) || [];
+  const grid = $('#homeGrid');
+  grid.innerHTML = '';
+  const nw = document.createElement('div');
+  nw.className = 'pcard new';
+  nw.innerHTML = '<div class="pv">+</div><div class="pm"><div class="pn">New project</div><div class="ps">Start from an empty timeline</div></div>';
+  nw.onclick = newProject;
+  grid.appendChild(nw);
+  list.forEach((e) => {
+    const c = document.createElement('div');
+    c.className = 'pcard';
+    const bg = e.thumb ? `background-image:url('${convertFileSrc(e.thumb)}')` : '';
+    const ratio = e.width && e.height ? `${e.width}×${e.height}` : '';
+    c.innerHTML = `<div class="pv" style="${bg}">${e.thumb ? '' : esc((e.name || '?').slice(0, 1).toUpperCase())}${e.duration ? `<span class="tag">${dur(e.duration)}</span>` : ''}</div>
+      <button class="px" title="Remove from list">✕</button>
+      <div class="pm"><div class="pn">${esc(e.name)}</div><div class="ps">${ago(e.updated)} · ${e.clips} clip${e.clips === 1 ? '' : 's'} · ${ratio}</div></div>`;
+    c.onclick = () => openPath(e.path);
+    $('.px', c).onclick = async (ev) => {
+      ev.stopPropagation();
+      if (await confirmBox('Remove project?', `“${e.name}” will be removed from this list${e.path.includes('projects') ? ' and its project file deleted (your media files are not touched)' : ''}.`, 'Remove')) {
+        await op('remove_recent', { path: e.path, deleteFile: true });
+        renderHome();
+      }
+    };
+    grid.appendChild(c);
+  });
+}
+async function connectClaude(btn) {
+  const msg = $('#connectMsg');
+  if (btn) btn.disabled = true;
+  msg.textContent = 'Connecting…';
+  try {
+    const r = await invoke('connect_claude');
+    toast('Connected. Restart your Claude Code session to see the Cutlight tools.');
+    msg.textContent = r.output || 'Connected.';
+  } catch (e) {
+    toast(String(e).slice(0, 200));
+    msg.textContent = String(e);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+let homeShown = false;
 function onState() {
+  const home = $('#home');
+  if (!S.open) {
+    if (ui.playing) pause();
+    home.hidden = false;
+    renderMcp();
+    renderHome(); // also refreshes previews as they finish generating
+    homeShown = true;
+    return;
+  }
+  if (!home.hidden) { home.hidden = true; homeShown = false; }
   const p = P();
   if (document.activeElement !== $('#projName')) $('#projName').value = p.name;
   $('#bUndo').disabled = !S.canUndo;
   $('#bRedo').disabled = !S.canRedo;
-  $('#saveState').textContent = S.path ? (S.dirty ? 'Unsaved changes' : 'Saved') : 'Autosaved (not saved to a file yet)';
+  $('#saveState').textContent = 'Saved automatically';
   if (document.activeElement !== $('#script')) $('#script').value = p.script;
   if (ui.sel && !findClip(ui.sel)) ui.sel = null;
   preview.setProject(p);
@@ -126,7 +207,7 @@ function onState() {
 
 function renderMcp() {
   const port = S.mcpPort;
-  $('#mcpDot').classList.toggle('ok', !!port);
+  ['#mcpDot', '#mcpDotTop', '#mcpDotHome'].forEach((s) => $(s).classList.toggle('ok', !!port));
   const url = `http://127.0.0.1:${port || 47321}/mcp`;
   $('#mcpCmd').textContent = `claude mcp add --transport http cutlight ${url}`;
   $('#mcpJson').textContent = JSON.stringify({ mcpServers: { cutlight: { type: 'http', url } } }, null, 2);
@@ -592,10 +673,12 @@ function init() {
   $('#bStart').innerHTML = I.start; $('#bPrev').innerHTML = I.prev; $('#bNext').innerHTML = I.next; $('#bPlay').innerHTML = I.play;
 
   $('#bUndo').onclick = () => op('undo'); $('#bRedo').onclick = () => op('redo');
-  $('#bNew').onclick = async () => { if (await confirmBox('New project?', 'The current project stays saved on disk if you saved it.', 'New project')) { ui.sel = null; op('new_project', {}); setTime(0); } };
-  $('#bOpen').onclick = async () => { const p = await T.dialog.open({ filters: [{ name: 'Cutlight project', extensions: ['cutlight'] }] }); if (p) { ui.sel = null; await op('open_project', { path: p }); setTime(0); } };
+  $('#bHome').onclick = async () => { pause(); await op('close_project'); };
+  $('#hOpen').onclick = openDialog;
   $('#bSave').onclick = saveProject;
-  $('#bExport').onclick = doExport;
+  $('#bConnect').onclick = (e) => connectClaude(e.currentTarget);
+  $('#bConnectTop').onclick = (e) => connectClaude(e.currentTarget);
+  $('#hConnect').onclick = (e) => connectClaude(e.currentTarget);
   $('#projName').onchange = (e) => op('set_settings', { name: e.target.value });
   $('#script').onchange = (e) => op('set_script', { text: e.target.value });
   $('#bImport').onclick = pickImport;
@@ -697,7 +780,7 @@ function fitZoom() {
   sc().scrollLeft = 0;
 }
 async function saveProject() {
-  if (S.path) return op('save_project', {}).then(() => toast('Saved'));
+  // projects autosave; this writes the project to a file of your choice and continues editing there
   const path = await T.dialog.save({ defaultPath: `${P().name}.cutlight`, filters: [{ name: 'Cutlight project', extensions: ['cutlight'] }] });
   if (path) op('save_project', { path }).then(() => toast('Saved'));
 }
@@ -708,12 +791,13 @@ function split() {
   op('split_clip', args);
 }
 function onKey(e) {
+  if (!S || !S.open) return;
   const tag = e.target.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable) return;
   const k = e.key.toLowerCase(), mod = e.ctrlKey || e.metaKey;
   if (mod && k === 'z') { e.preventDefault(); op(e.shiftKey ? 'redo' : 'undo'); }
   else if (mod && k === 'y') { e.preventDefault(); op('redo'); }
-  else if (mod && k === 's') { e.preventDefault(); saveProject(); }
+  else if (mod && k === 's') { e.preventDefault(); toast('Projects save automatically'); }
   else if (mod && k === 'e') { e.preventDefault(); doExport(); }
   else if (k === ' ') { e.preventDefault(); ui.playing ? pause() : play(); }
   else if (k === 's' && !mod) split();

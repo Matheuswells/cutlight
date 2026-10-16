@@ -10,16 +10,15 @@
 <div id="app">
   <header id="top">
     <div class="brand"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2l2.2 6.8L21 11l-6.8 2.2L12 20l-2.2-6.8L3 11l6.8-2.2z" fill="currentColor"/></svg><span>Cutlight</span></div>
+    <button class="ghost" id="bHome" title="Back to all projects">‹ Projects</button>
     <input id="projName" spellcheck="false" title="Project name">
     <div class="sep"></div>
     <button class="icon" id="bUndo" title="Undo (Ctrl+Z)"></button>
     <button class="icon" id="bRedo" title="Redo (Ctrl+Shift+Z)"></button>
-    <button class="ghost" id="bNew">New</button>
-    <button class="ghost" id="bOpen">Open</button>
-    <button class="ghost" id="bSave">Save</button>
+    <button class="ghost" id="bSave" title="Save a copy of the project to a file">Save as…</button>
     <div class="grow"></div>
     <span id="saveState" class="muted small"></span>
-    <button class="primary" id="bExport">Export</button>
+    <button class="soft" id="bConnectTop" title="Connect Claude Code to this editor"><span id="mcpDotTop" class="dot"></span> Connect Claude</button>
   </header>
 
   <aside id="left" class="panel">
@@ -44,6 +43,8 @@
       <div class="card">
         <div class="row gap"><span id="mcpDot" class="dot"></span><b>Claude connection</b></div>
         <p class="muted small">Cutlight runs a local MCP server while it is open. Claude can do everything you can, see the screen and drive the UI.</p>
+        <button class="primary" id="bConnect" style="width:100%">Connect to Claude Code</button>
+        <p class="muted small" id="connectMsg"></p>
         <p class="small"><b>Claude Code</b></p>
         <code id="mcpCmd" class="copy" title="Click to copy"></code>
         <p class="small"><b>Claude Desktop / other clients</b> (JSON config)</p>
@@ -102,6 +103,18 @@
       <div id="scroll"><div id="canvas"><div id="ruler"></div><div id="lanes"></div><div id="playhead"><i></i></div></div></div>
     </div>
   </section>
+</div>
+<div id="home" hidden>
+  <div class="homeIn">
+    <div class="homeHead">
+      <div class="brand big"><svg width="28" height="28" viewBox="0 0 24 24"><path d="M12 2l2.2 6.8L21 11l-6.8 2.2L12 20l-2.2-6.8L3 11l6.8-2.2z" fill="currentColor"/></svg><span>Cutlight</span></div>
+      <div class="grow"></div>
+      <button class="soft" id="hConnect"><span id="mcpDotHome" class="dot"></span> Connect Claude</button>
+      <button class="soft" id="hOpen">Open file…</button>
+    </div>
+    <h2>Your projects</h2>
+    <div id="homeGrid"></div>
+  </div>
 </div>
 <div id="modal" hidden></div>
 <div id="toasts"></div>

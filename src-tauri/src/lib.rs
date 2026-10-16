@@ -1,3 +1,4 @@
+mod connect;
 mod core;
 mod mcp;
 mod media;
@@ -71,6 +72,17 @@ fn html_finish(core: State<'_, Shared>, key: String, error: Option<String>) {
 }
 
 #[tauri::command]
+async fn connect_claude(core: State<'_, Shared>) -> Result<Value, String> {
+    use std::sync::atomic::Ordering;
+    let port = core.mcp_port.load(Ordering::Relaxed);
+    if port == 0 {
+        return Err("the local MCP server is not running".into());
+    }
+    let url = format!("http://127.0.0.1:{port}/mcp");
+    tauri::async_runtime::spawn_blocking(move || connect::run(&url)).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
 fn render_start(core: State<'_, Shared>, path: String) -> Result<Value, String> {
     render::start(core.inner(), path)
 }
@@ -94,6 +106,7 @@ pub fn run() {
                 redo: Mutex::new(vec![]),
                 path: Mutex::new(None),
                 dirty: AtomicBool::new(false),
+                open: AtomicBool::new(false), // always start on the start screen
                 ff: media::Ffmpeg::locate(),
                 cache_root,
                 render: Mutex::new(RenderStatus { state: "idle".into(), ..Default::default() }),
@@ -104,12 +117,11 @@ pub fn run() {
                 mcp_port: AtomicU16::new(0),
                 seq: AtomicU64::new(1),
             });
-            store::restore(&core);
             mcp::start(core.clone());
             app.manage(core);
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![op, get_state, ui_reply, html_frame, html_finish, render_start, render_cancel])
+        .invoke_handler(tauri::generate_handler![op, get_state, ui_reply, html_frame, html_finish, render_start, render_cancel, connect_claude])
         .run(tauri::generate_context!())
         .expect("error while running Cutlight");
 }

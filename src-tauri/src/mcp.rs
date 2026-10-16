@@ -21,7 +21,10 @@ fn tools() -> Vec<Value> {
         t("get_timeline", "Compact view of every track and clip (ids, start/end seconds, transitions). Call this first.", &[], &[]),
         t("get_project", "Full project JSON including media pool, settings, script and transcript.", &[], &[]),
         t("list_presets", "Instagram/social/video size presets.", &[], &[]),
-        t("new_project", "Start an empty project.", &[("name", "string", "project name")], &[]),
+        t("list_projects", "Recent projects (path, name, duration). Cutlight starts with no project open: open one or create one first.", &[], &[]),
+        t("close_project", "Close the current project and return to the start screen.", &[], &[]),
+        t("remove_recent", "Remove a project from the start screen list (deleteFile only deletes files Cutlight created).", &[("path", "string", ""), ("deleteFile", "boolean", "")], &["path"]),
+        t("new_project", "Create and open an empty project.", &[("name", "string", "project name")], &[]),
         t("open_project", "Open a .cutlight project file.", &[("path", "string", "absolute path")], &["path"]),
         t("save_project", "Save the project (pass path the first time).", &[("path", "string", "absolute path ending .cutlight")], &[]),
         t("undo", "Undo the last change.", &[], &[]),
@@ -143,7 +146,7 @@ fn rpc(core: &Shared, req: &Value) -> Option<Value> {
             "protocolVersion": req["params"]["protocolVersion"].as_str().unwrap_or("2025-03-26"),
             "capabilities": {"tools": {}},
             "serverInfo": {"name": "cutlight", "version": env!("CARGO_PKG_VERSION")},
-            "instructions": "Cutlight video editor. Start with get_timeline and get_project. Times are seconds on the timeline. The user may have pasted a script (get_script): compare it with get_transcript and fix mistakes with set_transcript/update_segment. Use screenshot to see the UI. HTML animations: see add_html."
+            "instructions": "Cutlight video editor. If no project is open (start screen), use list_projects then open_project, or new_project. Then get_timeline and get_project. Times are seconds on the timeline. The user may have pasted a script (get_script): compare it with get_transcript and fix mistakes with set_transcript/update_segment. Use screenshot to see the UI. HTML animations: see add_html."
         }),
         "tools/list" => json!({"tools": tools()}),
         "tools/call" => {

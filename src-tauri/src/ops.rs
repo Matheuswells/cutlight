@@ -202,11 +202,29 @@ pub fn resume_media_jobs(core: &Shared) {
 const READONLY: &[&str] = &["get_project", "get_timeline", "list_presets", "get_script", "get_transcript", "find_media"];
 
 pub fn run(core: &Shared, name: &str, a: &Value) -> R {
+    if !core.open.load(Ordering::Relaxed)
+        && !matches!(name, "new_project" | "open_project" | "list_projects" | "list_presets" | "remove_recent" | "close_project")
+    {
+        return Err("no project is open: call list_projects, then open_project or new_project".into());
+    }
     match name {
         "undo" | "redo" => return undo_redo(core, name == "undo"),
         "new_project" => return new_project(core, a),
         "open_project" => return open_project(core, s(a, "path")?),
         "save_project" => return save_project(core, os(a, "path")),
+        "list_projects" => return Ok(json!(crate::store::list(core))),
+        "remove_recent" => {
+            crate::store::remove(core, s(a, "path")?, ob(a, "deleteFile").unwrap_or(false));
+            core.emit_state();
+            return Ok(json!({"ok": true}));
+        }
+        "close_project" => {
+            crate::store::autosave(core);
+            core.open.store(false, Ordering::Relaxed);
+            core.cancel.store(true, Ordering::Relaxed);
+            core.emit_state();
+            return Ok(json!({"ok": true}));
+        }
         _ => {}
     }
     let mut p = core.project.lock().unwrap();
@@ -269,8 +287,9 @@ fn new_project(core: &Shared, a: &Value) -> R {
     }
     core.undo.lock().unwrap().clear();
     core.redo.lock().unwrap().clear();
-    *core.path.lock().unwrap() = None;
-    core.dirty.store(false, Ordering::Relaxed);
+    // every project is a real file from the start, so it always shows on the start screen
+    *core.path.lock().unwrap() = Some(crate::store::new_project_path(core));
+    core.open.store(true, Ordering::Relaxed);
     crate::store::autosave(core);
     core.emit_state();
     Ok(json!({"ok": true}))
@@ -284,7 +303,8 @@ fn open_project(core: &Shared, path: &str) -> R {
     core.redo.lock().unwrap().clear();
     *core.path.lock().unwrap() = Some(path.into());
     core.dirty.store(false, Ordering::Relaxed);
-    crate::store::remember_last(core);
+    core.open.store(true, Ordering::Relaxed);
+    crate::store::touch(core);
     resume_media_jobs(core);
     Ok(json!({"ok": true}))
 }
@@ -301,7 +321,7 @@ fn save_project(core: &Shared, path: Option<&str>) -> R {
     let txt = serde_json::to_string_pretty(&*core.project.lock().unwrap()).map_err(|e| e.to_string())?;
     std::fs::write(&target, txt).map_err(|e| e.to_string())?;
     core.dirty.store(false, Ordering::Relaxed);
-    crate::store::remember_last(core);
+    crate::store::touch(core);
     core.emit_state();
     Ok(json!({"saved": target.to_string_lossy()}))
 }
