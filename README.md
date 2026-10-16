@@ -8,6 +8,10 @@ A lightweight, AI-first video editor built with Tauri (Rust + webview). Windows 
 - **HTML animations**: Claude (or you) writes self-contained HTML; it previews live and is rendered frame-exact into the video.
 - **Claude control (MCP)**: a local MCP server exposes every editor function, screenshots and UI control. Cutlight shows the exact connect command in the *Claude* tab, e.g.
 
+<img width="1919" height="1079" alt="Captura de tela 2026-10-16 192641" src="https://github.com/user-attachments/assets/74f7bec1-9b1f-4937-ad5c-cd8fb354bb9c" />
+<img width="1919" height="1079" alt="Captura de tela 2026-10-16 192715" src="https://github.com/user-attachments/assets/4689f29b-167a-4eaf-ae7e-6950e52d65a2" />
+
+
   ```
   claude mcp add --transport http cutlight http://127.0.0.1:47321/mcp
   ```
