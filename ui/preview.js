@@ -10,13 +10,34 @@ function seek(t){
   try{(document.getAnimations?document.getAnimations():[]).forEach(function(a){try{a.pause();a.currentTime=t*1000}catch(e){}})}catch(e){}
   if(typeof window.__seek==='function'){try{window.__seek(t)}catch(e){}}
 }
+var INH=/^(color$|cursor|direction|font|letter-spacing|line-height|list-style|text-align|text-indent|text-shadow|text-transform|text-rendering|text-anchor|text-orientation|visibility|white-space|word|overflow-wrap|tab-size|fill|stroke|paint-order|shape-rendering|dominant-baseline|quotes|caret-color|accent-color|-webkit-text|-webkit-font|writing-mode|color-scheme|pointer-events|image-rendering|marker|clip-rule|color-interpolation|hyphens|line-break)/;
+var SVGNS='http://www.w3.org/2000/svg',REF={},ALW={'width':1,'height':1,'inline-size':1,'block-size':1,'transform-origin':1,'perspective-origin':1};
+function ref(el){
+  var k=el.namespaceURI+'|'+el.localName;
+  if(REF[k])return REF[k];
+  var box=document.createElement('div');box.style.cssText='position:absolute;visibility:hidden;left:-9999px;top:0';
+  document.body.appendChild(box);
+  var r;
+  if(el.namespaceURI===SVGNS){var s=document.createElementNS(SVGNS,'svg');box.appendChild(s);r=document.createElementNS(SVGNS,el.localName);s.appendChild(r)}
+  else{r=document.createElement(el.localName);box.appendChild(r)}
+  var cs=getComputedStyle(r),o={};
+  for(var i=0;i<cs.length;i++){o[cs[i]]=cs.getPropertyValue(cs[i])}
+  box.remove();REF[k]=o;return o;
+}
 function snap(W,H){
   var root=document.documentElement,clone=root.cloneNode(true);
   var live=[root].concat([].slice.call(root.querySelectorAll('*')));
   var cl=[clone].concat([].slice.call(clone.querySelectorAll('*')));
   for(var i=0;i<live.length;i++){
-    var cs=getComputedStyle(live[i]),txt='';
-    for(var j=0;j<cs.length;j++){var p=cs[j];txt+=p+':'+cs.getPropertyValue(p).replace(/"/g,"'")+';'}
+    var el=live[i],cs=getComputedStyle(el),txt='',j,p,v;
+    if(el===root||el===document.body){
+      for(j=0;j<cs.length;j++){p=cs[j];txt+=p+':'+cs.getPropertyValue(p).replace(/"/g,"'")+';'}
+    }else{
+      // only what differs from the element default (non-inherited) or from the parent (inherited): keeps frames small and fast
+      var rf=ref(el),pcs=getComputedStyle(el.parentElement);
+      for(j=0;j<cs.length;j++){p=cs[j];v=cs.getPropertyValue(p);
+        if(ALW[p]||v!==(INH.test(p)?pcs.getPropertyValue(p):rf[p]))txt+=p+':'+v.replace(/"/g,"'")+';'}
+    }
     cl[i].setAttribute('style',txt+'animation:none!important;transition:none!important;');
   }
   [].slice.call(clone.querySelectorAll('script,head')).forEach(function(n){n.remove()});

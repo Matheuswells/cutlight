@@ -103,7 +103,9 @@ Make it feel edited (not a slideshow)
 
 HTML animation contract (so it previews live AND renders frame-exact)
 - One complete self-contained HTML document. No network, no external fonts/images: inline everything (images via asset_data_uri tokens). Prefer system fonts.
-- Transparent background (html, body {background:transparent;margin:0}) for overlays; opaque only for scene/world backgrounds.
+- Transparent background (html, body {background:transparent;margin:0}) for overlays; opaque only for scene/world backgrounds. A FULL-FRAME OPAQUE scene must include <meta name="cutlight-opaque" content="1"> in its <head>: it renders much faster and uses ~20x less disk than an alpha overlay.
+- Design at the project size (e.g. 1080x1920) inside one fixed-size container and scale it with transform: scale(innerWidth/1080) so it matches any resolution; draft renders at lower resolution stay identical.
+- Cost: every frame is rasterised (~0.1-0.3 s). Keep scenes under ~400 DOM/SVG elements; long videos take minutes to render, so use quality "draft" and a lower resolution for checking.
 - Lay out in vw / vh / % so it fits any preset; the page is rendered at the project resolution.
 - Drive animation with CSS @keyframes (animation-fill-mode: both) / Web Animations, OR define window.__seek(t) (t = seconds from clip start) and set the state from t. __seek is the safest for counters, camera moves, morphs, 3D orbits and long timelines. Everything must be a pure function of t: no Math.random() without a seed, no Date.now(), no setTimeout-driven state.
 - Verified to render correctly: gradients, box-shadow stacks, border-radius, inline SVG (paths, gradients, clip-path, 2D transforms), CSS 3D (perspective, transform-style: preserve-3d, rotateX/Y/Z, translateZ, matrix3d), opacity, transforms.

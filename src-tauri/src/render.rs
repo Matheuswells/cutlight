@@ -449,14 +449,26 @@ fn render_html_clip(core: &Shared, c: &Clip, st: &Settings) -> Result<PathBuf, S
     (&html, st.width, st.height, st.fps, (c.duration * 1000.0) as i64).hash(&mut h);
     let dir = core.cache_root.join("html");
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    let file = dir.join(format!("{:016x}.mov", h.finish()));
+    // full-frame opaque scenes (<meta name="cutlight-opaque" content="1">) use compact H.264; overlays keep alpha (qtrle)
+    let opaque = html.contains("cutlight-opaque");
+    let ext = if opaque { "mp4" } else { "mov" };
+    let file = dir.join(format!("{:016x}.{ext}", h.finish()));
     if file.exists() {
         return Ok(file);
     }
-    let tmp = dir.join(format!("{:016x}.tmp.mov", h.finish()));
+    let tmp = dir.join(format!("{:016x}.tmp.{ext}", h.finish()));
     let mut cmd = std::process::Command::new(&core.ff.ffmpeg);
     quiet(&mut cmd).args(["-hide_banner", "-loglevel", "error", "-y", "-f", "image2pipe", "-framerate", &st.fps.to_string(), "-c:v", "png", "-i", "-"]);
-    cmd.args(["-c:v", "qtrle", "-pix_fmt", "argb"]).arg(&tmp);
+    if opaque {
+        if core.ff.has("libx264") {
+            cmd.args(["-c:v", "libx264", "-crf", "10", "-preset", "veryfast", "-pix_fmt", "yuv420p"]);
+        } else {
+            cmd.args(["-c:v", "mpeg4", "-q:v", "2", "-pix_fmt", "yuv420p"]);
+        }
+    } else {
+        cmd.args(["-c:v", "qtrle", "-pix_fmt", "argb"]);
+    }
+    cmd.arg(&tmp);
     cmd.stdin(Stdio::piped()).stdout(Stdio::null()).stderr(Stdio::piped());
     let mut child = cmd.spawn().map_err(|e| e.to_string())?;
     let key = format!("h{}", core.seq.fetch_add(1, Ordering::Relaxed));
