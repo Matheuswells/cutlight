@@ -63,6 +63,7 @@ addEventListener('message',function(e){
   var m=e.data||{};
   if(m.type==='seek'){seek(m.t)}
   else if(m.type==='snap'){seek(m.t);parent.postMessage({type:'snap',id:m.id,svg:snap(m.w,m.h)},'*')}
+  else if(m.type==='dispose'){[].slice.call(document.querySelectorAll('canvas')).forEach(function(c){try{var g=c.getContext('webgl2')||c.getContext('webgl');var x=g&&g.getExtension('WEBGL_lose_context');if(x)x.loseContext()}catch(e){}})}
 });
 })();`;
 
@@ -90,6 +91,7 @@ export class Preview {
 
   drop(id, e) {
     if (e.el.pause) e.el.pause();
+    else if (e.el.contentWindow) { try { e.el.contentWindow.postMessage({ type: 'dispose' }, '*'); } catch {} } // free WebGL contexts
     e.el.remove();
     this.els.delete(id);
   }
@@ -258,6 +260,8 @@ export async function renderHtmlFrames({ html, width, height, fps, frames }, sen
       if (onProgress) onProgress(i + 1, frames);
     }
   } finally {
+    try { f.contentWindow.postMessage({ type: 'dispose' }, '*'); } catch { /* frame already gone */ }
+    await sleep(40);
     f.remove();
   }
 }
