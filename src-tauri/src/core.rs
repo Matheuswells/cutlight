@@ -54,6 +54,7 @@ impl Core {
             "duration": p.duration(),
             "render": { "state": r.state, "progress": r.progress, "message": r.message, "output": r.output },
             "mcpPort": self.mcp_port.load(Ordering::Relaxed),
+            "exe": crate::connect::exe_path(),
         })
     }
 

@@ -1,6 +1,7 @@
 mod connect;
 mod core;
 mod mcp;
+mod mcp_stdio;
 mod media;
 mod model;
 mod ops;
@@ -71,15 +72,15 @@ fn html_finish(core: State<'_, Shared>, key: String, error: Option<String>) {
     }
 }
 
+/// Registers Cutlight in the Claude desktop app's config.
 #[tauri::command]
-async fn connect_claude(core: State<'_, Shared>) -> Result<Value, String> {
-    use std::sync::atomic::Ordering;
-    let port = core.mcp_port.load(Ordering::Relaxed);
-    if port == 0 {
-        return Err("the local MCP server is not running".into());
-    }
-    let url = format!("http://127.0.0.1:{port}/mcp");
-    tauri::async_runtime::spawn_blocking(move || connect::run(&url)).await.map_err(|e| e.to_string())?
+async fn connect_claude() -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(connect::run).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn claude_status() -> Result<bool, String> {
+    tauri::async_runtime::spawn_blocking(connect::linked).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -93,6 +94,11 @@ fn render_cancel(core: State<'_, Shared>) {
 }
 
 pub fn run() {
+    // Claude desktop launches us as `cutlight --mcp-stdio`: act as a stdio MCP relay, no window
+    if std::env::args().any(|a| a == "--mcp-stdio") {
+        mcp_stdio::run();
+        return;
+    }
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
@@ -121,7 +127,7 @@ pub fn run() {
             app.manage(core);
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![op, get_state, ui_reply, html_frame, html_finish, render_start, render_cancel, connect_claude])
+        .invoke_handler(tauri::generate_handler![op, get_state, ui_reply, html_frame, html_finish, render_start, render_cancel, connect_claude, claude_status])
         .run(tauri::generate_context!())
         .expect("error while running Cutlight");
 }

@@ -18,7 +18,7 @@
     <button class="ghost" id="bSave" title="Save a copy of the project to a file">Save as…</button>
     <div class="grow"></div>
     <span id="saveState" class="muted small"></span>
-    <button class="soft" id="bConnectTop" title="Connect Claude Code to this editor"><span id="mcpDotTop" class="dot"></span> Connect Claude</button>
+    <button class="soft" id="bConnectTop" title="Connect the Claude app to this editor"><span id="mcpDotTop" class="dot"></span> Connect Claude</button>
   </header>
 
   <aside id="left" class="panel">
@@ -43,11 +43,11 @@
       <div class="card">
         <div class="row gap"><span id="mcpDot" class="dot"></span><b>Claude connection</b></div>
         <p class="muted small">Cutlight runs a local MCP server while it is open. Claude can do everything you can, see the screen and drive the UI.</p>
-        <button class="primary" id="bConnect" style="width:100%">Connect to Claude Code</button>
+        <button class="primary" id="bConnect" style="width:100%">Connect to the Claude app</button>
         <p class="muted small" id="connectMsg"></p>
-        <p class="small"><b>Claude Code</b></p>
+        <p class="small"><b>Manual setup: Claude Code (terminal)</b></p>
         <code id="mcpCmd" class="copy" title="Click to copy"></code>
-        <p class="small"><b>Claude Desktop / other clients</b> (JSON config)</p>
+        <p class="small"><b>Manual setup: Claude app</b> (claude_desktop_config.json)</p>
         <code id="mcpJson" class="copy" title="Click to copy"></code>
       </div>
       <div class="card">
@@ -109,6 +109,7 @@
     <div class="homeHead">
       <div class="brand big"><svg width="28" height="28" viewBox="0 0 24 24"><path d="M12 2l2.2 6.8L21 11l-6.8 2.2L12 20l-2.2-6.8L3 11l6.8-2.2z" fill="currentColor"/></svg><span>Cutlight</span></div>
       <div class="grow"></div>
+      <select id="langSel" class="small" title="Language / Idioma"><option value="pt">Português</option><option value="en">English</option></select>
       <button class="soft" id="hConnect"><span id="mcpDotHome" class="dot"></span> Connect Claude</button>
       <button class="soft" id="hOpen">Open file…</button>
     </div>

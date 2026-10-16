@@ -1,3 +1,4 @@
+import { lang, setLang } from './i18n.js';
 import { Preview, renderHtmlFrames } from './preview.js';
 
 const T = window.__TAURI__;
@@ -135,7 +136,7 @@ async function renderHome() {
   grid.innerHTML = '';
   const nw = document.createElement('div');
   nw.className = 'pcard new';
-  nw.innerHTML = '<div class="pv">+</div><div class="pm"><div class="pn">New project</div><div class="ps">Start from an empty timeline</div></div>';
+  nw.innerHTML = '<div class="pv">+</div><div class="pm"><div class="pn pt">New project</div><div class="ps">Start from an empty timeline</div></div>';
   nw.onclick = newProject;
   grid.appendChild(nw);
   list.forEach((e) => {
@@ -157,24 +158,50 @@ async function renderHome() {
     grid.appendChild(c);
   });
 }
-async function connectClaude(btn) {
-  const msg = $('#connectMsg');
+async function connectClaude(btn, msgEl) {
+  const msg = msgEl || $('#connectMsg');
   if (btn) btn.disabled = true;
   msg.textContent = 'Connecting…';
   try {
     const r = await invoke('connect_claude');
-    toast('Connected. Restart your Claude Code session to see the Cutlight tools.');
+    ui.linked = true;
+    renderMcp();
     msg.textContent = r.output || 'Connected.';
+    toast('Connected. Fully quit and reopen the Claude app to load the Cutlight tools.');
+    return true;
   } catch (e) {
     toast(String(e).slice(0, 200));
     msg.textContent = String(e);
+    return false;
   } finally {
     if (btn) btn.disabled = false;
   }
 }
+async function refreshLink() {
+  try { ui.linked = await invoke('claude_status'); } catch { ui.linked = false; }
+  renderMcp();
+  return ui.linked;
+}
+function connectModal() {
+  const m = modal(`<h3>Connect Cutlight to Claude</h3>
+    <p class="muted">Let Claude edit with you: cut, animate, add graphics and render. One click links this editor to the Claude app.</p>
+    <p class="muted small" id="cmMsg"></p>
+    <div class="row gap" style="margin-top:14px;justify-content:flex-end"><button class="soft" id="cmNo">Not now</button><button class="primary" id="cmGo">Connect to Claude</button></div>`);
+  $('#cmNo', m).onclick = closeModal;
+  $('#cmGo', m).onclick = async (e) => {
+    const ok = await connectClaude(e.currentTarget, $('#cmMsg', m));
+    if (ok) setTimeout(closeModal, 1400);
+  };
+}
+async function promptConnectOnce() {
+  if (ui.prompted || !S.mcpPort) return;
+  ui.prompted = true;
+  if (!(await refreshLink()) && $('#modal').hidden) connectModal();
+}
 
 let homeShown = false;
 function onState() {
+  promptConnectOnce();
   const home = $('#home');
   if (!S.open) {
     if (ui.playing) pause();
@@ -207,10 +234,12 @@ function onState() {
 
 function renderMcp() {
   const port = S.mcpPort;
-  ['#mcpDot', '#mcpDotTop', '#mcpDotHome'].forEach((s) => $(s).classList.toggle('ok', !!port));
+  ['#mcpDot', '#mcpDotTop', '#mcpDotHome'].forEach((s) => $(s).classList.toggle('ok', !!port && !!ui.linked));
+  ['#bConnectTop', '#hConnect'].forEach((s) => { const b = $(s); b.lastChild.textContent = ui.linked ? ' Claude connected' : ' Connect Claude'; });
+  $('#bConnect').textContent = ui.linked ? 'Reconnect to the Claude app' : 'Connect to the Claude app';
   const url = `http://127.0.0.1:${port || 47321}/mcp`;
   $('#mcpCmd').textContent = `claude mcp add --transport http cutlight ${url}`;
-  $('#mcpJson').textContent = JSON.stringify({ mcpServers: { cutlight: { type: 'http', url } } }, null, 2);
+  $('#mcpJson').textContent = JSON.stringify({ mcpServers: { cutlight: { command: S.exe || 'cutlight', args: ['--mcp-stdio'] } } }, null, 2);
 }
 
 // ---------------- media pool ----------------
@@ -675,6 +704,8 @@ function init() {
   $('#bUndo').onclick = () => op('undo'); $('#bRedo').onclick = () => op('redo');
   $('#bHome').onclick = async () => { pause(); await op('close_project'); };
   $('#hOpen').onclick = openDialog;
+  $('#langSel').value = lang;
+  $('#langSel').onchange = (e) => setLang(e.target.value);
   $('#bSave').onclick = saveProject;
   $('#bConnect').onclick = (e) => connectClaude(e.currentTarget);
   $('#bConnectTop').onclick = (e) => connectClaude(e.currentTarget);

@@ -157,3 +157,5 @@ h4{font:600 15px var(--serif);margin:6px 0 4px}
 .dot{display:inline-block;flex:none}
 .pcard .pv{position:relative}
 .pcard .tag{bottom:8px;left:8px}
+#langSel{width:auto;padding:6px 8px}
+#stage{isolation:isolate;z-index:0}
